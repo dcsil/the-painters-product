@@ -66,7 +66,6 @@ the-painters-product/
 
 ### Analysis
 - Stores analysis results from LLM processing
-- Types: hallucination, gender_bias, toxicity, etc.
 - Contains JSON results with summary, details, and recommendations
 
 ## Application Flow
@@ -121,13 +120,6 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Building for Production
-
-```bash
-npm run build
-npm run start
-```
-
 ### Database Management
 
 ```bash
@@ -140,14 +132,6 @@ npx prisma migrate dev --name migration_name
 # Generate Prisma Client (after schema changes)
 npx prisma generate
 ```
-
-## LLM Integration
-
-The application is ready for LLM processing integration. See `LLM_INTEGRATION_GUIDE.md` for detailed instructions on how to integrate the actual analysis logic.
-
-**Key integration point**: `/app/api/process/route.ts`
-
-Currently contains mock processing that should be replaced with actual LLM analysis.
 
 ## API Endpoints
 
@@ -177,45 +161,9 @@ Trigger processing (internal use)
 - `/dashboard/[id]` - View analysis results
 - `/uploads` - List past uploads
 
-## Development Notes
-
-### For Frontend/Backend Developer (You)
-All pages, routing, and API endpoints are complete. The UI is fully functional with:
-- File upload with drag-and-drop
-- Progress tracking
-- Dashboard with visualizations
-- Responsive design with dark mode
-
-### For LLM Integration Developer (Your Teammate)
-Follow the `LLM_INTEGRATION_GUIDE.md` to integrate the actual analysis logic. The infrastructure is ready - just replace the mock processing in `/app/api/process/route.ts`.
-
 ## Scripts
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-
-## Features Implemented
-
-✅ File upload with drag-and-drop UI  
-✅ JSON validation and error handling  
-✅ Database integration with Prisma  
-✅ Processing status page with polling  
-✅ Interactive analysis dashboard  
-✅ Past uploads list view  
-✅ Responsive design with Tailwind CSS  
-✅ Dark mode support  
-✅ API endpoints for all operations  
-✅ Integration guide for LLM processing  
-
-## Next Steps
-
-1. Integrate actual LLM processing logic (see `LLM_INTEGRATION_GUIDE.md`)
-2. Add user authentication (optional)
-3. Add data export functionality
-4. Deploy to production
-
-## License
-
-Course project for CSC454/491
