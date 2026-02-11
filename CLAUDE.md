@@ -10,7 +10,8 @@
 
 - **Framework**: Next.js 15 with App Router, TypeScript
 - **Frontend**: React + Tailwind CSS 4
-- **Database**: SQLite via Prisma 7 ORM + `better-sqlite3` adapter (synchronous)
+- **Database**: PostgreSQL (Neon) via Prisma 7 ORM
+- **File storage**: Vercel Blob
 - **LLM**: Google Gemini via `@google/generative-ai` SDK
 - **Linting**: ESLint
 
@@ -36,11 +37,27 @@ npx prisma migrate reset                   # Reset database (destructive)
 Create a `.env.local` file in the project root before running:
 
 ```
+DATABASE_URL=your_neon_postgres_connection_string
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
+BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
 ```
 
-`GEMINI_MODEL` defaults to `gemini-2.5-flash` if not set. Swap to any `@google/generative-ai`-compatible model name.
+`GEMINI_MODEL` defaults to `gemini-2.5-flash` if not set. `BLOB_READ_WRITE_TOKEN` is auto-injected on Vercel but required locally.
+
+## Deployment (Vercel)
+
+The app is deployed on Vercel. The following services must be configured:
+
+- **Database**: [Neon](https://neon.tech) — serverless PostgreSQL. Set `DATABASE_URL` to the pooled connection string.
+- **File storage**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) — `BLOB_READ_WRITE_TOKEN` is auto-injected when the Blob store is linked in the Vercel dashboard.
+- **LLM**: Gemini API key set as `GEMINI_API_KEY` in Vercel environment variables.
+- **Processing**: Gemini analysis runs synchronously inside `/api/upload` with a 60s max function duration (`export const maxDuration = 60`).
+
+After changing the schema, run migrations against Neon:
+```bash
+DATABASE_URL=your_neon_url npx prisma migrate deploy
+```
 
 ## Project Structure
 
@@ -55,7 +72,7 @@ app/
     upload/route.ts           # POST: upload conversation file
     upload/[id]/route.ts      # GET: upload status + results
     uploads/route.ts          # GET: list all uploads
-    process/route.ts          # POST: trigger Gemini LLM processing
+    upload/route.ts           # POST: upload + runs Gemini analysis synchronously
 lib/
   prisma.ts                   # Prisma client singleton
   gemini.ts                   # Gemini client, prompt builder, and types
@@ -70,10 +87,11 @@ sample-telus-many-hallucinations.json  # Test: multiple hallucination types
 
 ## Key Architecture Notes
 
-- **LLM integration**: `app/api/process/route.ts` calls `lib/gemini.ts`, which sends one prompt per conversation to Gemini and expects structured JSON back.
+- **LLM integration**: `app/api/upload/route.ts` calls `lib/gemini.ts` synchronously — one Gemini prompt per upload, returns structured JSON, written to DB before the HTTP response is sent.
 - **Input format**: JSON array of `{ id: "user"|"assistant", content: string }` objects.
-- **Upload flow**: Upload → `/api/upload` → poll `/processing/[id]` → view `/dashboard/[id]`
-- **Database**: SQLite, synchronous adapter. Single-server only.
+- **Upload flow**: Upload → `/api/upload` (analysis runs here) → poll `/processing/[id]` → view `/dashboard/[id]`
+- **Database**: Neon PostgreSQL via Prisma. `DATABASE_URL` must be set in environment.
+- **File storage**: Vercel Blob. `BLOB_READ_WRITE_TOKEN` must be set in environment.
 - **User model** exists in schema but authentication is not implemented.
 
 ## Hallucination Detection Strategies
@@ -92,10 +110,9 @@ Implemented via the Gemini prompt in `lib/gemini.ts`:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/upload` | Upload file (FormData: file, fileName, fileSize) → `{ uploadId }` |
+| `POST` | `/api/upload` | Upload file (FormData: file, fileName, fileSize), runs Gemini analysis → `{ uploadId }` |
 | `GET`  | `/api/upload/[id]` | Get upload status + analyses |
 | `GET`  | `/api/uploads` | List all uploads |
-| `POST` | `/api/process` | Trigger Gemini analysis `{ uploadId, filePath, conversationData }` |
 
 ## Database Schema (Summary)
 

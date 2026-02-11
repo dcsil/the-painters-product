@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { put } from '@vercel/blob'
+import { analyzeHallucinations, ConversationMessage } from '@/lib/gemini'
+
+// Allow up to 60s for Gemini analysis on Vercel
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Upload request received')
-    
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const fileName = formData.get('fileName') as string
@@ -22,92 +25,84 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    console.log('Buffer length:', buffer.length)
-
     // Parse and validate JSON
-    let conversationData
+    let conversationData: ConversationMessage[]
     try {
-      // Convert to UTF-8 string and remove BOM if present
       const text = buffer.toString('utf-8').replace(/^\uFEFF/, '').trim()
-      console.log('First 100 chars:', text.substring(0, 100))
       conversationData = JSON.parse(text)
       console.log('JSON parsed successfully, items:', conversationData.length)
     } catch (error) {
-      console.error('JSON parse error:', error)
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Invalid JSON format. Please check your file.',
         details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 400 })
     }
 
-    // Validate structure
     if (!Array.isArray(conversationData)) {
       return NextResponse.json({ error: 'JSON must be an array' }, { status: 400 })
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'uploads')
-    try {
-      await mkdir(uploadsDir, { recursive: true })
-    } catch (error) {
-      // Directory might already exist
-    }
-
-    // Save file to disk
+    // Upload file to Vercel Blob
     const timestamp = Date.now()
     const savedFileName = `${timestamp}-${fileName}`
-    const filePath = join(uploadsDir, savedFileName)
-    await writeFile(filePath, buffer)
+    const blob = await put(savedFileName, buffer, { access: 'public' })
+    const filePath = blob.url
 
-    // Create a demo user (in production, you'd get this from auth)
-    let user = await prisma.user.findFirst({
-      where: { email: 'demo@example.com' }
-    })
-
+    // Create or reuse demo user (no auth yet)
+    let user = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
     if (!user) {
       user = await prisma.user.create({
-        data: {
-          email: 'demo@example.com',
-          name: 'Demo User'
-        }
+        data: { email: 'demo@example.com', name: 'Demo User' }
       })
     }
 
-    // Create upload record in database
+    // Create upload record
     const upload = await prisma.upload.create({
       data: {
         userId: user.id,
         fileName: savedFileName,
         fileSize: fileSize,
-        status: 'pending'
+        status: 'processing'
       }
     })
 
     console.log('Upload record created:', upload.id)
 
-    // TODO: Trigger background processing job
-    // This is where your teammate will integrate their LLM processing
-    // For now, we'll simulate this with a webhook endpoint
-    
-    // Call the processing webhook (non-blocking)
-    setTimeout(() => {
-      fetch(`${request.nextUrl.origin}/api/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    // Run Gemini analysis synchronously (works within Vercel's 60s limit)
+    try {
+      console.log(`[upload] Starting Gemini analysis for upload ${upload.id}`)
+      const result = await analyzeHallucinations(conversationData)
+      console.log(`[upload] Analysis complete — ${result.flaggedTurns.length} flagged turns`)
+
+      await prisma.analysis.create({
+        data: {
           uploadId: upload.id,
-          filePath: filePath,
-          conversationData: conversationData
-        })
-      }).catch(error => {
-        console.error('Failed to trigger processing:', error)
+          analysisType: 'hallucination',
+          result: JSON.stringify(result),
+          confidence: result.averageConfidence,
+          detectedIssues: result.flaggedTurns.length,
+        }
       })
-    }, 100) // Small delay to ensure response is sent first
+
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: { status: 'completed' }
+      })
+    } catch (analysisError) {
+      console.error('[upload] Gemini analysis failed:', analysisError)
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: {
+          status: 'failed',
+          errorMessage: analysisError instanceof Error ? analysisError.message : 'LLM analysis failed'
+        }
+      })
+    }
 
     return NextResponse.json({
       success: true,
       uploadId: upload.id,
-      message: 'File uploaded successfully'
+      message: 'File uploaded and analysed successfully'
     })
   } catch (error) {
     console.error('Upload error:', error)
