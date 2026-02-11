@@ -33,18 +33,18 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {session?.user && (
-          <header className="bg-gray-900 border-b border-gray-800">
+          <header className="bg-white border-b border-gray-200 shadow-sm">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
               <nav className="flex items-center gap-6">
-                <Link href="/upload" className="text-gray-300 hover:text-white text-sm font-medium transition-colors">
+                <Link href="/upload" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
                   Upload
                 </Link>
-                <Link href="/uploads" className="text-gray-300 hover:text-white text-sm font-medium transition-colors">
+                <Link href="/uploads" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
                   History
                 </Link>
               </nav>
               <div className="flex items-center gap-4">
-                <span className="text-gray-400 text-sm">{session.user.email}</span>
+                <span className="text-gray-500 text-sm">{session.user.email}</span>
                 <form
                   action={async () => {
                     "use server";
@@ -53,7 +53,7 @@ export default async function RootLayout({
                 >
                   <button
                     type="submit"
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                    className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
                   >
                     Sign out
                   </button>
