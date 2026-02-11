@@ -54,6 +54,7 @@ The app is deployed on Vercel. The following services must be configured:
 - **Database**: [Neon](https://neon.tech) — serverless PostgreSQL. Set `DATABASE_URL` to the pooled connection string.
 - **File storage**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) — `BLOB_READ_WRITE_TOKEN` is auto-injected when the Blob store is linked in the Vercel dashboard.
 - **LLM**: Gemini API key set as `GEMINI_API_KEY` in Vercel environment variables.
+- **Auth**: `NEXTAUTH_SECRET` must be set as a Vercel environment variable.
 - **Processing**: Gemini analysis runs synchronously inside `/api/upload` with a 60s max function duration (`export const maxDuration = 60`).
 
 After changing the schema, run migrations against Neon:
@@ -66,22 +67,27 @@ DATABASE_URL=your_neon_url npx prisma migrate deploy
 ```
 app/
   page.tsx                    # Home page with features overview
+  login/page.tsx              # Login form (email + password)
+  signup/page.tsx             # Sign-up form (auto-login on success)
   upload/page.tsx             # Drag-and-drop file upload
-  processing/[id]/page.tsx    # Real-time processing status (polls every 2s)
+  processing/[id]/page.tsx    # Polling status page (see Known Issues)
   dashboard/[id]/page.tsx     # Hallucination analysis dashboard
-  uploads/page.tsx            # List all past uploads
+  uploads/page.tsx            # List all past uploads for the current user
   api/
-    upload/route.ts           # POST: upload conversation file
-    upload/[id]/route.ts      # GET: upload status + results
-    uploads/route.ts          # GET: list all uploads
-    upload/route.ts           # POST: upload + runs Gemini analysis synchronously
+    upload/route.ts           # POST: upload conversation file + run Gemini
+    upload/[id]/route.ts      # GET: upload status + results (auth + ownership)
+    uploads/route.ts          # GET: list uploads for current user
+    auth/[...nextauth]/       # NextAuth.js route handler (GET + POST)
+    auth/register/            # POST: create new account
 lib/
-  prisma.ts                   # Prisma client singleton
+  prisma.ts                   # Prisma client singleton (Neon adapter)
   gemini.ts                   # Gemini client, prompt builder, and types
+  auth.ts                     # NextAuth.js config (Credentials provider + JWT callbacks)
+proxy.ts                      # Route protection — redirects unauthenticated users to /login
 prisma/
   schema.prisma               # DB schema (User, Upload, Analysis)
   migrations/                 # Migration history
-uploads/                      # Uploaded files storage (gitignored)
+prisma.config.ts              # Prisma 7 config (datasource URL lives here, not in schema)
 sample-telus-clean.json                # Test: clean conversation (no issues)
 sample-telus-one-hallucination.json    # Test: single hallucination
 sample-telus-many-hallucinations.json  # Test: multiple hallucination types
@@ -91,10 +97,24 @@ sample-telus-many-hallucinations.json  # Test: multiple hallucination types
 
 - **LLM integration**: `app/api/upload/route.ts` calls `lib/gemini.ts` synchronously — one Gemini prompt per upload, returns structured JSON, written to DB before the HTTP response is sent.
 - **Input format**: JSON array of `{ id: "user"|"assistant", content: string }` objects.
-- **Upload flow**: Upload → `/api/upload` (analysis runs here) → poll `/processing/[id]` → view `/dashboard/[id]`
-- **Database**: Neon PostgreSQL via Prisma. `DATABASE_URL` must be set in environment.
+- **Upload flow**: Upload → `/api/upload` (analysis runs here synchronously) → poll `/processing/[id]` → view `/dashboard/[id]`
+- **Authentication**: All app routes are protected by `proxy.ts`. Each API endpoint checks `auth()` and scopes data to `session.user.id`.
+- **Database**: Neon PostgreSQL via Prisma. `DATABASE_URL` must be set in environment. Prisma 7 requires the datasource URL in `prisma.config.ts`, not `schema.prisma`.
 - **File storage**: Vercel Blob. `BLOB_READ_WRITE_TOKEN` must be set in environment.
-- **User model** exists in schema but authentication is not implemented.
+
+## Known Issues
+
+### Processing page shows simulated progress, not real-time analysis steps
+
+**Root cause:** Vercel serverless functions cannot stream incremental progress mid-request. Gemini analysis runs synchronously inside `/api/upload` (max 60s), so the HTTP response isn't returned until the full analysis is complete. The `/processing/[id]` page polls `/api/upload/[id]` every 2 seconds and animates a fake progress bar — it only knows `pending → processing → completed/failed`, not which internal sub-step is running.
+
+**Impact:** The progress animation and step indicators are cosmetic. The flow works end-to-end correctly; it's just not as informative as it could be.
+
+**Potential solutions to explore:**
+- Use [Vercel AI SDK streaming](https://sdk.vercel.ai/docs/ai-sdk-ui/stream-protocol) to stream partial Gemini output
+- Move analysis to a background job queue (e.g. Inngest, Trigger.dev) so `/api/upload` returns immediately and a worker processes asynchronously
+- Server-sent events (SSE) from the upload function, consumed by the processing page
+- WebSocket-based progress (requires a non-serverless or persistent deployment)
 
 ## Hallucination Detection Strategies
 
@@ -110,11 +130,13 @@ Implemented via the Gemini prompt in `lib/gemini.ts`:
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/upload` | Upload file (FormData: file, fileName, fileSize), runs Gemini analysis → `{ uploadId }` |
-| `GET`  | `/api/upload/[id]` | Get upload status + analyses |
-| `GET`  | `/api/uploads` | List all uploads |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/upload` | Required | Upload file (FormData: file, fileName, fileSize), runs Gemini analysis → `{ uploadId }` |
+| `GET`  | `/api/upload/[id]` | Required | Get upload status + analyses (own uploads only) |
+| `GET`  | `/api/uploads` | Required | List all uploads for the logged-in user |
+| `POST` | `/api/auth/register` | Public | Create a new account `{ email, password, name? }` |
+| `GET/POST` | `/api/auth/[...nextauth]` | Public | NextAuth.js session management |
 
 ## Database Schema (Summary)
 
@@ -126,12 +148,11 @@ The `result` JSON for a `hallucination` analysis matches `HallucinationAnalysisR
 
 ## Future Extensions
 
-The following analysis types are planned but not yet implemented:
+The following are planned but not yet implemented:
 
 - **Gender Bias Detection** — flag assistant responses that apply different standards, language, or assumptions based on user gender cues
 - **Toxicity Detection** — identify harmful, offensive, or inappropriate language in assistant responses
-
-These were removed from the MVP to focus on hallucination quality and conserve LLM API credits.
+- **Real processing progress** — replace the simulated progress bar with actual streaming or async job status (see Known Issues above)
 
 ## No Test Framework
 
