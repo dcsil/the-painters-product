@@ -1,0 +1,14 @@
+[
+  { "id": "user", "content": "Hi, I'm having trouble connecting to the internet on my phone. It was working fine yesterday." },
+  { "id": "assistant", "content": "I'm sorry to hear you're having connectivity issues. Let me help you troubleshoot. First, can you tell me what type of connection is affected — are you having trouble with mobile data, Wi-Fi, or both?" },
+  { "id": "user", "content": "It's the mobile data. Wi-Fi works fine at home." },
+  { "id": "assistant", "content": "Got it. Since Wi-Fi is working, the issue is likely with your mobile data connection. Here are a few things to try: First, toggle Airplane Mode on and off — this resets your network connection. If that doesn't help, try restarting your phone completely. You can also check your data settings to make sure mobile data is still enabled and that you haven't accidentally enabled data roaming restrictions." },
+  { "id": "user", "content": "I tried all of that. Still not working." },
+  { "id": "assistant", "content": "Thanks for trying those steps. The next thing to check is your APN settings — these are the network configuration settings your phone uses to connect to TELUS's mobile network. Sometimes these can get reset after a software update. Would you like me to walk you through how to verify or reset your APN settings? It differs slightly between Android and iPhone — which type of phone do you have?" },
+  { "id": "user", "content": "I have an Android." },
+  { "id": "assistant", "content": "For Android, you can find APN settings under Settings > Network & Internet > Mobile Network > Advanced > Access Point Names. If you see a TELUS entry there, make sure it's selected. If something looks off or you're unsure, I'd recommend contacting TELUS technical support directly so they can verify your account settings and potentially push a configuration update to your device remotely. They can be reached at 1-866-558-2273 or through the My TELUS app." },
+  { "id": "user", "content": "Okay I'll try that. One more question — does TELUS offer any data rollover?" },
+  { "id": "assistant", "content": "That's a great question. TELUS does offer data carry-over on some plans, which allows unused data from one month to roll over to the following month. The availability of this feature depends on your specific plan. I'd recommend checking your plan details in the My TELUS app or on the TELUS website to see if data carry-over applies to your plan, since plan offerings can vary." },
+  { "id": "user", "content": "Alright, thank you for your help!" },
+  { "id": "assistant", "content": "You're welcome! I hope the troubleshooting steps get your data working again. Don't hesitate to reach out if you need further assistance. Have a great day!" }
+]

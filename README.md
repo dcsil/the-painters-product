@@ -4,17 +4,22 @@ A Next.js application for mass data analysis of AI chatbot conversations to iden
 
 ## Overview
 
-This tool allows users to upload JSON files containing AI chatbot conversation data, processes them through LLM analysis, and displays insights through an interactive dashboard.
+This tool allows users to upload JSON files containing AI chatbot conversation data, processes them through Gemini LLM analysis, and displays insights through an interactive dashboard.
 
 ### Key Features
 
 - 🚀 **Drag-and-drop file upload** with validation
 - ⚡ **Real-time processing status** with progress tracking
-- 📊 **Interactive dashboard** with analysis insights
-- 🎨 **Modern UI** with Tailwind CSS and dark mode support
+- 📊 **Interactive dashboard** with hallucination analysis insights
+- 🔍 **Hallucination detection**: self-contradictions, overconfidence, fabricated citations, unverified facts
+- ⚠ **Numerical impact highlighting**: flags specific dollar amounts, percentages, and dates involved in hallucinations
+- 🎨 **Modern UI** with Tailwind CSS
 - 💾 **SQLite database** with Prisma ORM
-- 🔄 **Status polling** for asynchronous processing
-- 📈 **Multiple analysis types**: hallucination detection, bias detection, toxicity analysis
+
+### Planned Future Analysis Types
+
+- ⚖️ **Gender Bias Detection** — flag differential treatment based on user gender cues
+- 🚨 **Toxicity Detection** — identify harmful or inappropriate assistant responses
 
 ## Tech Stack
 
@@ -22,6 +27,7 @@ This tool allows users to upload JSON files containing AI chatbot conversation d
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
 - **Database**: SQLite with Prisma 7
+- **LLM**: Google Gemini (`@google/generative-ai`)
 - **Linting**: ESLint
 
 ## Project Structure
@@ -30,86 +36,51 @@ This tool allows users to upload JSON files containing AI chatbot conversation d
 the-painters-product/
 ├── app/
 │   ├── page.tsx                    # Home page
-│   ├── upload/
-│   │   └── page.tsx                # File upload page
-│   ├── processing/[id]/
-│   │   └── page.tsx                # Processing status page
-│   ├── dashboard/[id]/
-│   │   └── page.tsx                # Analysis dashboard
-│   ├── uploads/
-│   │   └── page.tsx                # Past uploads list
+│   ├── upload/page.tsx             # File upload page
+│   ├── processing/[id]/page.tsx    # Processing status page
+│   ├── dashboard/[id]/page.tsx     # Hallucination analysis dashboard
+│   ├── uploads/page.tsx            # Past uploads list
 │   └── api/
-│       ├── upload/
-│       │   ├── route.ts            # Upload endpoint
-│       │   └── [id]/route.ts       # Get upload status
+│       ├── upload/route.ts         # Upload endpoint
+│       ├── upload/[id]/route.ts    # Get upload status
 │       ├── uploads/route.ts        # List all uploads
-│       └── process/route.ts        # Processing endpoint (LLM integration point)
+│       └── process/route.ts        # Gemini LLM processing endpoint
 ├── lib/
-│   └── prisma.ts                   # Prisma client singleton
+│   ├── prisma.ts                   # Prisma client singleton
+│   └── gemini.ts                   # Gemini client, prompt builder, and types
 ├── prisma/
 │   ├── schema.prisma               # Database schema
 │   └── migrations/                 # Database migrations
 ├── uploads/                        # Uploaded files storage
-└── LLM_INTEGRATION_GUIDE.md       # Guide for LLM integration
-```
-
-## Database Schema
-
-### User
-- Stores user information
-- Linked to uploads
-
-### Upload
-- Tracks uploaded conversation files
-- Status: pending, processing, completed, failed
-- Linked to analyses
-
-### Analysis
-- Stores analysis results from LLM processing
-- Contains JSON results with summary, details, and recommendations
-
-## Application Flow
-
-1. **Upload** → User uploads a JSON file with conversation data
-2. **Validation** → File is validated for correct format
-3. **Processing** → Background processing analyzes the data
-4. **Status Tracking** → User sees real-time processing updates
-5. **Dashboard** → Results displayed with insights and visualizations
-
-## Input Data Format
-
-Upload JSON files with this structure:
-
-```json
-[
-  {
-    "id": "user",
-    "content": "Hello, how are you?"
-  },
-  {
-    "id": "assistant",
-    "content": "I'm doing well, thank you!"
-  }
-]
+├── sample-telus-clean.json                # Test: clean conversation
+├── sample-telus-one-hallucination.json    # Test: single hallucination
+└── sample-telus-many-hallucinations.json  # Test: multiple hallucination types
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js v18 or higher
 - npm
+- A Google Gemini API key (free tier available at [aistudio.google.com](https://aistudio.google.com))
 
 ### Installation
 
-1. Navigate to the project directory:
+1. Navigate to the app directory:
 ```bash
 cd the-painters-product
 ```
 
-2. The dependencies are already installed. If you need to reinstall:
+2. Install dependencies:
 ```bash
 npm install
+```
+
+3. Create a `.env.local` file in the project root:
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 ### Running the Development Server
@@ -123,21 +94,35 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Database Management
 
 ```bash
-# Open Prisma Studio (database GUI)
-npx prisma studio
-
-# Create a new migration
-npx prisma migrate dev --name migration_name
-
-# Generate Prisma Client (after schema changes)
-npx prisma generate
+npx prisma studio              # Open Prisma Studio (database GUI)
+npx prisma migrate dev         # Create a new migration
+npx prisma generate            # Regenerate Prisma Client
 ```
+
+## Input Data Format
+
+Upload JSON files with this structure:
+
+```json
+[
+  { "id": "user", "content": "Hello, what plans do you offer?" },
+  { "id": "assistant", "content": "We have several plans available..." }
+]
+```
+
+## Application Flow
+
+1. **Upload** → User uploads a JSON file with conversation data
+2. **Validation** → File is validated for correct format
+3. **Processing** → Gemini LLM analyzes the conversation for hallucinations
+4. **Status Tracking** → User sees real-time processing updates
+5. **Dashboard** → Results displayed with hallucination rate, issue breakdown, and flagged turn details
 
 ## API Endpoints
 
 ### POST `/api/upload`
 Upload a conversation file
-- **Body**: FormData with file, fileName, fileSize
+- **Body**: FormData with `file`, `fileName`, `fileSize`
 - **Returns**: `{ success: true, uploadId: string }`
 
 ### GET `/api/upload/[id]`
@@ -149,21 +134,13 @@ List all uploads
 - **Returns**: Array of upload objects
 
 ### POST `/api/process`
-Trigger processing (internal use)
+Trigger Gemini processing (called internally after upload)
 - **Body**: `{ uploadId, filePath, conversationData }`
 - **Returns**: `{ success: true }`
 
-## Pages
-
-- `/` - Home page with features overview
-- `/upload` - Upload conversation data
-- `/processing/[id]` - View processing status
-- `/dashboard/[id]` - View analysis results
-- `/uploads` - List past uploads
-
 ## Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+- `npm run dev` — Start development server
+- `npm run build` — Build for production
+- `npm run start` — Start production server
+- `npm run lint` — Run ESLint
