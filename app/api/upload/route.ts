@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
 import { analyzeHallucinations, ConversationMessage } from '@/lib/gemini'
+import { auth } from '@/lib/auth'
 
 // Allow up to 60s for Gemini analysis on Vercel
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     console.log('Upload request received')
 
     const formData = await request.formData()
@@ -48,18 +54,12 @@ export async function POST(request: NextRequest) {
     const blob = await put(savedFileName, buffer, { access: 'public' })
     const filePath = blob.url
 
-    // Create or reuse demo user (no auth yet)
-    let user = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
-    if (!user) {
-      user = await prisma.user.create({
-        data: { email: 'demo@example.com', name: 'Demo User' }
-      })
-    }
+    console.log('File uploaded to blob:', filePath)
 
-    // Create upload record
+    // Create upload record for the authenticated user
     const upload = await prisma.upload.create({
       data: {
-        userId: user.id,
+        userId: session.user.id,
         fileName: savedFileName,
         fileSize: fileSize,
         status: 'processing'

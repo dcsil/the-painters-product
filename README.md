@@ -1,20 +1,17 @@
 # AI Chatbot Analysis Tool
 
-A Next.js application for mass data analysis of AI chatbot conversations to identify areas of improvement and potential response concerns.
+A Next.js full-stack web application for mass data analysis of AI chatbot conversations, identifying hallucinations and other response quality issues. Built for CSC491 by The pAInters.
 
-## Overview
+## Features
 
-This tool allows users to upload JSON files containing AI chatbot conversation data, processes them through Gemini LLM analysis, and displays insights through an interactive dashboard.
-
-### Key Features
-
-- 🚀 **Drag-and-drop file upload** with validation
-- ⚡ **Real-time processing status** with progress tracking
-- 📊 **Interactive dashboard** with hallucination analysis insights
+- 🔐 **Authentication** — email/password sign-up and login (NextAuth.js v5)
+- 🚀 **Drag-and-drop file upload** with JSON validation
+- 🤖 **Gemini LLM analysis** — one prompt per conversation, structured JSON output
 - 🔍 **Hallucination detection**: self-contradictions, overconfidence, fabricated citations, unverified facts
-- ⚠ **Numerical impact highlighting**: flags specific dollar amounts, percentages, and dates involved in hallucinations
-- 🎨 **Modern UI** with Tailwind CSS
-- 💾 **SQLite database** with Prisma ORM
+- ⚠ **Numerical impact highlighting** — flags specific dollar amounts, percentages, and dates in flagged turns
+- 📊 **Interactive dashboard** with hallucination rate, confidence scores, issue breakdown, and per-turn cards
+- 💾 **Per-user data isolation** — each account sees only their own uploads
+- ⚡ **Real-time processing status** page with progress polling
 
 ### Planned Future Analysis Types
 
@@ -23,124 +20,138 @@ This tool allows users to upload JSON files containing AI chatbot conversation d
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4
-- **Database**: SQLite with Prisma 7
-- **LLM**: Google Gemini (`@google/generative-ai`)
-- **Linting**: ESLint
-
-## Project Structure
-
-```
-the-painters-product/
-├── app/
-│   ├── page.tsx                    # Home page
-│   ├── upload/page.tsx             # File upload page
-│   ├── processing/[id]/page.tsx    # Processing status page
-│   ├── dashboard/[id]/page.tsx     # Hallucination analysis dashboard
-│   ├── uploads/page.tsx            # Past uploads list
-│   └── api/
-│       ├── upload/route.ts         # Upload endpoint
-│       ├── upload/[id]/route.ts    # Get upload status
-│       ├── uploads/route.ts        # List all uploads
-│       └── process/route.ts        # Gemini LLM processing endpoint
-├── lib/
-│   ├── prisma.ts                   # Prisma client singleton
-│   └── gemini.ts                   # Gemini client, prompt builder, and types
-├── prisma/
-│   ├── schema.prisma               # Database schema
-│   └── migrations/                 # Database migrations
-├── uploads/                        # Uploaded files storage
-├── sample-telus-clean.json                # Test: clean conversation
-├── sample-telus-one-hallucination.json    # Test: single hallucination
-└── sample-telus-many-hallucinations.json  # Test: multiple hallucination types
-```
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router), TypeScript |
+| Styling | Tailwind CSS 4 |
+| Database | PostgreSQL (Neon) via Prisma 7 |
+| File storage | Vercel Blob |
+| LLM | Google Gemini (`@google/generative-ai`) |
+| Auth | NextAuth.js v5 — email/password, JWT sessions, bcrypt |
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js v18 or higher
-- npm
-- A Google Gemini API key (free tier available at [aistudio.google.com](https://aistudio.google.com))
+- Node.js v18+
+- A Google Gemini API key (free tier: [aistudio.google.com](https://aistudio.google.com))
+- A Neon PostgreSQL database ([neon.tech](https://neon.tech))
+- A Vercel Blob store token (or deploy to Vercel where it's auto-injected)
 
 ### Installation
 
-1. Navigate to the app directory:
-```bash
-cd the-painters-product
-```
-
-2. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Create a `.env.local` file in the project root:
+### Environment variables
+
+Create a `.env.local` file in the project root:
+
 ```
+DATABASE_URL=your_neon_postgres_connection_string
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
+BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
+NEXTAUTH_SECRET=your_random_secret   # generate: openssl rand -base64 32
 ```
 
-### Running the Development Server
+### Database setup
+
+```bash
+npx prisma migrate dev --name init   # first-time setup
+npx prisma generate                  # regenerate client after schema changes
+```
+
+### Run locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Database Management
-
-```bash
-npx prisma studio              # Open Prisma Studio (database GUI)
-npx prisma migrate dev         # Create a new migration
-npx prisma generate            # Regenerate Prisma Client
-```
+Open [http://localhost:3000](http://localhost:3000). You'll be redirected to `/login` — create an account first.
 
 ## Input Data Format
 
-Upload JSON files with this structure:
+Upload a `.json` file containing an array of conversation turns:
 
 ```json
 [
-  { "id": "user", "content": "Hello, what plans do you offer?" },
+  { "id": "user",      "content": "Hello, what plans do you offer?" },
   { "id": "assistant", "content": "We have several plans available..." }
 ]
 ```
 
+Three sample files are included for testing: `sample-telus-clean.json`, `sample-telus-one-hallucination.json`, `sample-telus-many-hallucinations.json`.
+
 ## Application Flow
 
-1. **Upload** → User uploads a JSON file with conversation data
-2. **Validation** → File is validated for correct format
-3. **Processing** → Gemini LLM analyzes the conversation for hallucinations
-4. **Status Tracking** → User sees real-time processing updates
-5. **Dashboard** → Results displayed with hallucination rate, issue breakdown, and flagged turn details
+1. **Sign up / Log in** → `/login` or `/signup`
+2. **Upload** → drag-and-drop a JSON file at `/upload`
+3. **Processing** → `/processing/[id]` polls for status while Gemini analysis runs server-side
+4. **Dashboard** → `/dashboard/[id]` shows hallucination rate, issue breakdown, and per-turn flagged cards
+
+> **Note:** Because Gemini analysis runs synchronously inside the `/api/upload` function (required by Vercel's serverless model), the processing page currently shows a simulated progress animation while polling for the completed status rather than true real-time sub-step progress. This is a known limitation — see [Known Issues](#known-issues) below.
 
 ## API Endpoints
 
-### POST `/api/upload`
-Upload a conversation file
-- **Body**: FormData with `file`, `fileName`, `fileSize`
-- **Returns**: `{ success: true, uploadId: string }`
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/upload` | Required | Upload file + run Gemini analysis → `{ uploadId }` |
+| `GET`  | `/api/upload/[id]` | Required | Get upload status + analyses (own uploads only) |
+| `GET`  | `/api/uploads` | Required | List all uploads for the logged-in user |
+| `POST` | `/api/auth/register` | Public | Create a new account |
+| `GET/POST` | `/api/auth/[...nextauth]` | Public | NextAuth.js session endpoints |
 
-### GET `/api/upload/[id]`
-Get upload status and analysis results
-- **Returns**: Upload object with analyses
+## Known Issues
 
-### GET `/api/uploads`
-List all uploads
-- **Returns**: Array of upload objects
+### Processing page shows simulated progress, not real-time analysis steps
 
-### POST `/api/process`
-Trigger Gemini processing (called internally after upload)
-- **Body**: `{ uploadId, filePath, conversationData }`
-- **Returns**: `{ success: true }`
+**Root cause:** Vercel serverless functions cannot stream incremental progress back to the client. The Gemini analysis runs synchronously inside `/api/upload` (with a 60-second timeout), meaning the HTTP response isn't returned until the full analysis is complete. The `/processing/[id]` page polls `/api/upload/[id]` every 2 seconds and animates a fake progress bar — it only knows "pending → processing → completed/failed", not which internal step is running.
+
+**Impact:** Users see an animated progress bar that doesn't reflect actual analysis progress. The experience still works correctly end-to-end — it just isn't as informative as it could be.
+
+**Potential solutions to explore:**
+- Use [Vercel AI SDK streaming](https://sdk.vercel.ai/docs/ai-sdk-ui/stream-protocol) to stream partial results
+- Move analysis to a background job queue (e.g. Inngest, Trigger.dev, or a Vercel Cron + separate worker)
+- Stream server-sent events (SSE) from the upload function and consume them on the processing page
+- Use Next.js Server-Sent Events or WebSocket support (requires a non-serverless deployment)
+
+## Project Structure
+
+```
+app/
+  page.tsx                    # Home page
+  login/page.tsx              # Login form
+  signup/page.tsx             # Sign-up form
+  upload/page.tsx             # Drag-and-drop file upload
+  processing/[id]/page.tsx    # Polling status page (simulated progress)
+  dashboard/[id]/page.tsx     # Hallucination analysis dashboard
+  uploads/page.tsx            # Past uploads list
+  api/
+    upload/route.ts           # POST: upload + Gemini analysis (synchronous)
+    upload/[id]/route.ts      # GET: upload status + results (auth + ownership)
+    uploads/route.ts          # GET: list uploads for current user
+    auth/[...nextauth]/       # NextAuth.js route handler
+    auth/register/            # POST: create new account
+lib/
+  prisma.ts                   # Prisma client singleton (Neon adapter)
+  gemini.ts                   # Gemini client, prompt builder, and types
+  auth.ts                     # NextAuth.js config (Credentials provider)
+proxy.ts                      # Route protection middleware
+prisma/
+  schema.prisma               # DB schema (User, Upload, Analysis)
+  migrations/                 # Migration history
+sample-telus-clean.json
+sample-telus-one-hallucination.json
+sample-telus-many-hallucinations.json
+```
 
 ## Scripts
 
-- `npm run dev` — Start development server
-- `npm run build` — Build for production
-- `npm run start` — Start production server
-- `npm run lint` — Run ESLint
+```bash
+npm run dev      # Start development server
+npm run build    # Production build
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
