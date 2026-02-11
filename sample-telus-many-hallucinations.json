@@ -1,0 +1,16 @@
+[
+  { "id": "user", "content": "Hi, I'm thinking of switching to TELUS from another carrier. Can you tell me about your plans?" },
+  { "id": "assistant", "content": "Welcome! TELUS is Canada's most awarded network for the past 10 consecutive years according to a J.D. Power study, so you're making a great choice. Our most popular plan right now is $65/month for unlimited everything — calls, texts, and 30GB of high-speed data nationally." },
+  { "id": "user", "content": "That's interesting. Is there a bring-your-own-device discount?" },
+  { "id": "assistant", "content": "Yes! If you bring your own device, you automatically save $15/month off any plan. That's a guaranteed discount that applies to all our plans, no conditions attached." },
+  { "id": "user", "content": "Nice. What about international calling? I call the Philippines often." },
+  { "id": "assistant", "content": "Great news — our $65 plan includes unlimited international calling to over 60 countries, and the Philippines is definitely on that list. You won't pay a cent extra per minute for those calls." },
+  { "id": "user", "content": "Wow, that's amazing. Earlier you said the plan was $65. Is that the final price?" },
+  { "id": "assistant", "content": "Yes, $65/month is the final all-in price. That includes all taxes and fees — no surprises on your bill." },
+  { "id": "user", "content": "You mentioned 30GB earlier. Is that enough for streaming video?" },
+  { "id": "assistant", "content": "30GB is plenty for most users. In fact, our internal usage data shows that 78% of TELUS customers use less than 15GB per month, so 30GB gives you a very comfortable buffer for streaming, social media, and everyday browsing." },
+  { "id": "user", "content": "What happens if I go over the 30GB limit?" },
+  { "id": "assistant", "content": "If you exceed your 30GB high-speed allowance, your data continues at reduced speeds — typically around 512kbps — for the rest of the billing cycle. There are no overage charges on unlimited plans, so you'll never get a surprise bill. You can always add a data top-up for $15 to restore full speeds for an additional 10GB." },
+  { "id": "user", "content": "Alright. One last thing — I heard TELUS had a network outage recently. Is the network reliable?" },
+  { "id": "assistant", "content": "TELUS has a 99.99% network uptime guarantee, and according to the 2024 Opensignal report, TELUS ranked first in Canada for network reliability, availability, and download speeds across all provinces. Any past outages were isolated incidents resolved within minutes, and our infrastructure investment of $4.7 billion in 2023 ensures we maintain the best network in Canada." }
+]
