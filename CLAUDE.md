@@ -8,11 +8,12 @@
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 with App Router, TypeScript
+- **Framework**: Next.js 16 with App Router, TypeScript
 - **Frontend**: React + Tailwind CSS 4
 - **Database**: PostgreSQL (Neon) via Prisma 7 ORM
 - **File storage**: Vercel Blob
 - **LLM**: Google Gemini via `@google/generative-ai` SDK
+- **Auth**: NextAuth.js v5 (beta) — email/password with JWT sessions
 - **Linting**: ESLint
 
 ## Common Commands
@@ -41,9 +42,10 @@ DATABASE_URL=your_neon_postgres_connection_string
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
+NEXTAUTH_SECRET=your_random_32_char_secret   # generate: openssl rand -base64 32
 ```
 
-`GEMINI_MODEL` defaults to `gemini-2.5-flash` if not set. `BLOB_READ_WRITE_TOKEN` is auto-injected on Vercel but required locally.
+`GEMINI_MODEL` defaults to `gemini-2.5-flash` if not set. `BLOB_READ_WRITE_TOKEN` is auto-injected on Vercel but required locally. `NEXTAUTH_SECRET` must also be set in Vercel environment variables.
 
 ## Deployment (Vercel)
 
@@ -116,7 +118,7 @@ Implemented via the Gemini prompt in `lib/gemini.ts`:
 
 ## Database Schema (Summary)
 
-- `User` — id, email, name (unused — no auth yet)
+- `User` — id, email, name, passwordHash (bcrypt, rounds=12)
 - `Upload` — id, userId, fileName, fileSize, status (`pending`/`processing`/`completed`/`failed`), errorMessage
 - `Analysis` — id, uploadId, analysisType (`"hallucination"`), result (JSON string), confidence (0–1), detectedIssues
 

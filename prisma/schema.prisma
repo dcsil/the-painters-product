@@ -11,12 +11,13 @@ datasource db {
 
 // User model for managing users who upload data
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  uploads   Upload[]
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  uploads      Upload[]
 }
 
 // Upload model for tracking conversation data uploads
