@@ -61,23 +61,23 @@ export default function UploadsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading uploads...</p>
+          <div className="w-16 h-16 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading uploads...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-6xl mx-auto py-8">
+    <div className="min-h-screen bg-slate-50 p-4">
+      <div className="max-w-5xl mx-auto py-8">
         {/* Header */}
         <div className="mb-8">
           <Link 
             href="/"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
+            className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-4 font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -86,16 +86,16 @@ export default function UploadsPage() {
           </Link>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
                 Past Uploads
               </h1>
-              <p className="text-gray-600">
-                View and manage your previous analysis uploads
+              <p className="text-slate-600">
+                View and manage your previous analysis uploads.
               </p>
             </div>
             <Link
               href="/upload"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md transition-colors shadow-sm"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -119,19 +119,19 @@ export default function UploadsPage() {
 
         {/* Empty State */}
         {!error && uploads.length === 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-            <svg className="w-20 h-20 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-md shadow-sm border border-slate-200 p-12 text-center">
+            <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">
               No uploads yet
             </h2>
-            <p className="text-gray-600 mb-6">
-              Start analyzing your AI chatbot conversations by uploading a file
+            <p className="text-slate-600 mb-6">
+              Start analyzing your AI chatbot conversations by uploading a file.
             </p>
             <Link
               href="/upload"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md transition-colors shadow-sm"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -147,19 +147,19 @@ export default function UploadsPage() {
             {uploads.map((upload) => (
               <div
                 key={upload.id}
-                className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                className="bg-white rounded-md shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-slate-900">
                         {upload.fileName}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(upload.status)}`}>
-                        {upload.status.charAt(0).toUpperCase() + upload.status.slice(1)}
+                      <span className={`px-2.5 py-0.5 rounded-sm text-xs font-semibold tracking-wide uppercase ${getStatusColor(upload.status)}`}>
+                        {upload.status}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-slate-600">
                       <div className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -182,11 +182,11 @@ export default function UploadsPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 shrink-0">
                     {upload.status === 'completed' && (
                       <Link
                         href={`/dashboard/${upload.id}`}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-md transition-colors"
                       >
                         View Dashboard
                       </Link>
@@ -194,7 +194,7 @@ export default function UploadsPage() {
                     {upload.status === 'processing' && (
                       <Link
                         href={`/processing/${upload.id}`}
-                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
+                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-medium text-sm rounded-md transition-colors"
                       >
                         View Progress
                       </Link>
@@ -202,7 +202,7 @@ export default function UploadsPage() {
                     {upload.status === 'failed' && (
                       <Link
                         href="/upload"
-                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-medium text-sm rounded-md transition-colors"
                       >
                         Try Again
                       </Link>
