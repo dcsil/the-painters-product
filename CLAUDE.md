@@ -12,7 +12,7 @@
 - **Frontend**: React + Tailwind CSS 4
 - **Database**: PostgreSQL (Neon) via Prisma 7 ORM
 - **File storage**: Vercel Blob
-- **LLM**: Google Gemini via `@google/generative-ai` SDK
+- **LLM**: Google Gemini or Groq (Llama) via `@google/generative-ai` and `groq-sdk` — switch with `ANALYSIS_PROVIDER`
 - **Auth**: NextAuth.js v5 (beta) — email/password with JWT sessions
 - **Linting**: ESLint
 
@@ -35,7 +35,7 @@ npx prisma migrate reset                   # Reset database (destructive)
 
 ## Environment Setup
 
-Create a `.env.local` file in the project root before running:
+**Local development:** Create a `.env.local` file in the project root before running. (Vercel ignores `.env.local` — use **Project Settings → Environment Variables** in the Vercel dashboard for production.)
 
 ```
 DATABASE_URL=your_neon_postgres_connection_string
@@ -43,9 +43,17 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
 NEXTAUTH_SECRET=your_random_32_char_secret   # generate: openssl rand -base64 32
+
+# Groq (Llama) — both run in parallel when both keys are set
+GROQ_API_KEY=your_groq_api_key_here       # Optional; when set with GEMINI_API_KEY, both analyses run per file
+GROQ_MODEL=llama-3.1-8b-instant           # Optional; defaults to llama-3.1-8b-instant
 ```
 
 `GEMINI_MODEL` defaults to `gemini-2.5-flash` if not set. `BLOB_READ_WRITE_TOKEN` is auto-injected on Vercel but required locally. `NEXTAUTH_SECRET` must also be set in Vercel environment variables.
+
+**Dual analysis:** If both `GEMINI_API_KEY` and `GROQ_API_KEY` are set, both providers run in parallel for each upload. The dashboard shows a provider selector to compare results.
+
+**Groq setup (free tier):** Sign up at [console.groq.com](https://console.groq.com), create an API key, and set `GROQ_API_KEY`. No credit card required.
 
 ## Deployment (Vercel)
 
@@ -53,7 +61,7 @@ The app is deployed on Vercel. The following services must be configured:
 
 - **Database**: [Neon](https://neon.tech) — serverless PostgreSQL. Set `DATABASE_URL` to the pooled connection string.
 - **File storage**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) — `BLOB_READ_WRITE_TOKEN` is auto-injected when the Blob store is linked in the Vercel dashboard.
-- **LLM**: Gemini API key set as `GEMINI_API_KEY` in Vercel environment variables.
+- **LLM**: Set `GEMINI_API_KEY` and optionally `GROQ_API_KEY` in Vercel environment variables. When both are set, both analyses run in parallel per file.
 - **Auth**: `NEXTAUTH_SECRET` must be set as a Vercel environment variable.
 - **Processing**: Gemini analysis runs synchronously inside `/api/upload` with a 60s max function duration (`export const maxDuration = 60`).
 
@@ -81,7 +89,10 @@ app/
     auth/register/            # POST: create new account
 lib/
   prisma.ts                   # Prisma client singleton (Neon adapter)
-  gemini.ts                   # Gemini client, prompt builder, and types
+  gemini.ts                   # Main entry: analyzeHallucinations (dispatches to Gemini or Groq)
+  groq.ts                     # Groq (Llama) analysis implementation
+  analysis-types.ts           # Shared types for analysis results
+  analysis-prompt.ts          # Shared prompt for hallucination detection
   auth.ts                     # NextAuth.js config (Credentials provider + JWT callbacks)
 proxy.ts                      # Route protection — redirects unauthenticated users to /login
 prisma/
@@ -144,7 +155,7 @@ Implemented via the Gemini prompt in `lib/gemini.ts`:
 - `Upload` — id, userId, fileName, fileSize, status (`pending`/`processing`/`completed`/`failed`), errorMessage
 - `Analysis` — id, uploadId, analysisType (`"hallucination"`), result (JSON string), confidence (0–1), detectedIssues
 
-The `result` JSON for a `hallucination` analysis matches `HallucinationAnalysisResult` in `lib/gemini.ts`.
+The `result` JSON for a `hallucination` analysis matches `HallucinationAnalysisResult` in `lib/analysis-types.ts`.
 
 ## Future Extensions
 

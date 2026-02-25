@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
-import { analyzeHallucinations, ConversationMessage } from '@/lib/gemini'
+import { analyzeWithGemini, ConversationMessage } from '@/lib/gemini'
+import { analyzeWithGroq } from '@/lib/groq'
 import { auth } from '@/lib/auth'
 
 // Allow up to 60s for Gemini analysis on Vercel
@@ -68,28 +69,72 @@ export async function POST(request: NextRequest) {
 
     console.log('Upload record created:', upload.id)
 
-    // Run Gemini analysis synchronously (works within Vercel's 60s limit)
+    // Run LLM analysis (both providers in parallel when both keys are set)
     try {
-      console.log(`[upload] Starting Gemini analysis for upload ${upload.id}`)
-      const result = await analyzeHallucinations(conversationData)
-      console.log(`[upload] Analysis complete — ${result.flaggedTurns.length} flagged turns`)
+      const hasGemini = !!process.env.GEMINI_API_KEY
+      const hasGroq = !!process.env.GROQ_API_KEY
 
-      await prisma.analysis.create({
-        data: {
-          uploadId: upload.id,
-          analysisType: 'hallucination',
-          result: JSON.stringify(result),
-          confidence: result.averageConfidence,
-          detectedIssues: result.flaggedTurns.length,
-        }
-      })
+      const providers: Array<'gemini' | 'groq'> = []
+      if (hasGemini) providers.push('gemini')
+      if (hasGroq) providers.push('groq')
+
+      if (providers.length === 0) {
+        throw new Error('At least one of GEMINI_API_KEY or GROQ_API_KEY must be set')
+      }
+
+      console.log(`[upload] Starting parallel analysis for upload ${upload.id}: ${providers.join(', ')}`)
+
+      const [geminiSettled, groqSettled] = await Promise.allSettled([
+        hasGemini ? analyzeWithGemini(conversationData) : Promise.resolve(null),
+        hasGroq ? analyzeWithGroq(conversationData) : Promise.resolve(null),
+      ])
+
+      const geminiResult = hasGemini && geminiSettled.status === 'fulfilled' ? geminiSettled.value : null
+      const groqResult = hasGroq && groqSettled.status === 'fulfilled' ? groqSettled.value : null
+
+      if (geminiSettled.status === 'rejected') {
+        console.error('[upload] Gemini analysis failed:', geminiSettled.reason)
+      }
+      if (groqSettled.status === 'rejected') {
+        console.error('[upload] Groq analysis failed:', groqSettled.reason)
+      }
+
+      if (geminiResult) {
+        await prisma.analysis.create({
+          data: {
+            uploadId: upload.id,
+            analysisType: 'hallucination-gemini',
+            result: JSON.stringify(geminiResult),
+            confidence: geminiResult.averageConfidence,
+            detectedIssues: geminiResult.flaggedTurns.length,
+          },
+        })
+        console.log(`[upload] Gemini complete — ${geminiResult.flaggedTurns.length} flagged turns`)
+      }
+
+      if (groqResult) {
+        await prisma.analysis.create({
+          data: {
+            uploadId: upload.id,
+            analysisType: 'hallucination-groq',
+            result: JSON.stringify(groqResult),
+            confidence: groqResult.averageConfidence,
+            detectedIssues: groqResult.flaggedTurns.length,
+          },
+        })
+        console.log(`[upload] Groq complete — ${groqResult.flaggedTurns.length} flagged turns`)
+      }
+
+      if (!geminiResult && !groqResult) {
+        throw new Error('All analysis providers failed')
+      }
 
       await prisma.upload.update({
         where: { id: upload.id },
-        data: { status: 'completed' }
+        data: { status: 'completed' },
       })
     } catch (analysisError) {
-      console.error('[upload] Gemini analysis failed:', analysisError)
+      console.error('[upload] Analysis failed:', analysisError)
       await prisma.upload.update({
         where: { id: upload.id },
         data: {

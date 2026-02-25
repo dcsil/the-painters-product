@@ -150,6 +150,7 @@ export default function DashboardPage() {
   const [upload, setUpload] = useState<Upload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedProvider, setSelectedProvider] = useState<string>('')
 
   useEffect(() => {
     if (!uploadId) return
@@ -198,8 +199,20 @@ export default function DashboardPage() {
     )
   }
 
-  // ---- Parse analysis ----
-  const hallucinationAnalysis = upload.analyses.find(a => a.analysisType === 'hallucination')
+  // ---- Parse analyses (supports hallucination, hallucination-gemini, hallucination-groq) ----
+  const hallucinationAnalyses = upload.analyses.filter(a =>
+    a.analysisType === 'hallucination' || a.analysisType.startsWith('hallucination-')
+  )
+  const providerLabels: Record<string, string> = {
+    'hallucination': 'Default',
+    'hallucination-gemini': 'Gemini',
+    'hallucination-groq': 'Groq (Llama)',
+  }
+  const effectiveProvider = selectedProvider && hallucinationAnalyses.some(a => a.analysisType === selectedProvider)
+    ? selectedProvider
+    : (hallucinationAnalyses[0]?.analysisType ?? 'hallucination')
+  const hallucinationAnalysis = hallucinationAnalyses.find(a => a.analysisType === effectiveProvider)
+    ?? hallucinationAnalyses[0]
   let result: HallucinationResult | null = null
   if (hallucinationAnalysis) {
     try {
@@ -244,6 +257,23 @@ export default function DashboardPage() {
               {isClean ? '✓ No Issues Found' : `⚠ ${flaggedCount} Issue${flaggedCount !== 1 ? 's' : ''} Detected`}
             </span>
           </div>
+          {hallucinationAnalyses.length > 1 && (
+            <div className="flex gap-2 mt-4">
+              {hallucinationAnalyses.map(a => (
+                <button
+                  key={a.analysisType}
+                  onClick={() => setSelectedProvider(a.analysisType)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    effectiveProvider === a.analysisType
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {providerLabels[a.analysisType] ?? a.analysisType}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ---- Top stats ---- */}
