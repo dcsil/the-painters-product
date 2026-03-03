@@ -69,22 +69,22 @@ export default function ProcessingPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-md shadow-sm border border-slate-200 p-8 max-w-md w-full">
           <div className="flex items-center justify-center mb-4">
-            <svg className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+          <h2 className="text-xl font-semibold text-slate-900 text-center mb-2">
             Processing Failed
           </h2>
-          <p className="text-gray-600 text-center mb-6">
+          <p className="text-slate-600 text-center mb-6">
             {error}
           </p>
           <button
             onClick={() => router.push('/upload')}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md transition-colors"
           >
             Try Again
           </button>
@@ -94,15 +94,15 @@ export default function ProcessingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-md shadow-sm border border-slate-200 p-8 max-w-md w-full">
         {/* Loading Animation */}
         <div className="flex items-center justify-center mb-6">
           <div className="relative">
-            <div className="w-24 h-24 border-4 border-blue-200 rounded-full"></div>
-            <div className="w-24 h-24 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+            <div className="w-24 h-24 border-4 border-slate-200 rounded-full"></div>
+            <div className="w-24 h-24 border-4 border-slate-900 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-10 h-10 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
@@ -110,18 +110,18 @@ export default function ProcessingPage() {
         </div>
 
         {/* Status Text */}
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+        <h2 className="text-xl font-semibold text-slate-900 text-center mb-2">
           {status === 'completed' ? 'Analysis Complete!' : 'Processing Your Data...'}
         </h2>
-        <p className="text-gray-600 text-center mb-6">
+        <p className="text-slate-600 text-center mb-6">
           {status === 'completed' 
             ? 'Redirecting to dashboard...'
             : 'Analyzing conversation data for insights and potential issues'}
         </p>
 
         {fileName && (
-          <div className="mb-6 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-gray-700 text-center">
+          <div className="mb-6 p-3 bg-slate-50 border border-slate-100 rounded-md">
+            <p className="text-sm text-slate-700 text-center">
               <span className="font-semibold">File:</span> {fileName}
             </p>
           </div>
@@ -130,12 +130,12 @@ export default function ProcessingPage() {
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Progress</span>
-            <span className="text-sm font-medium text-gray-700">{Math.round(progress)}%</span>
+            <span className="text-sm font-medium text-slate-700">Progress</span>
+            <span className="text-sm font-medium text-slate-700">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-slate-200 rounded-full h-2.5">
             <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+              className="bg-slate-900 h-2.5 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -143,39 +143,39 @@ export default function ProcessingPage() {
 
         {/* Processing Steps */}
         <div className="space-y-3">
-          <div className={`flex items-center gap-3 ${status !== 'pending' ? 'text-green-600' : 'text-gray-600'}`}>
+          <div className={`flex items-center gap-3 ${status !== 'pending' ? 'text-green-600' : 'text-slate-500'}`}>
             {status !== 'pending' ? (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+              <div className="w-5 h-5 border-2 border-slate-300 rounded-full"></div>
             )}
             <span className="text-sm font-medium">Validating conversation data</span>
           </div>
 
-          <div className={`flex items-center gap-3 ${status === 'processing' || status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
+          <div className={`flex items-center gap-3 ${status === 'processing' || status === 'completed' ? 'text-green-600' : 'text-slate-500'}`}>
             {status === 'processing' || status === 'completed' ? (
               status === 'completed' ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
               )
             ) : (
-              <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+              <div className="w-5 h-5 border-2 border-slate-300 rounded-full"></div>
             )}
             <span className="text-sm font-medium">Running AI analysis</span>
           </div>
 
-          <div className={`flex items-center gap-3 ${status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>
+          <div className={`flex items-center gap-3 ${status === 'completed' ? 'text-green-600' : 'text-slate-500'}`}>
             {status === 'completed' ? (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+              <div className="w-5 h-5 border-2 border-slate-300 rounded-full"></div>
             )}
             <span className="text-sm font-medium">Generating insights</span>
           </div>
