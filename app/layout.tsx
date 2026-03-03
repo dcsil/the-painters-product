@@ -42,6 +42,12 @@ export default async function RootLayout({
                 <Link href="/uploads" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
                   History
                 </Link>
+                <Link href="/ground-truth" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+                  Ground Truth
+                </Link>
+                <Link href="/settings" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+                  Settings
+                </Link>
               </nav>
               <div className="flex items-center gap-4">
                 <span className="text-slate-500 text-sm">{session.user.email}</span>

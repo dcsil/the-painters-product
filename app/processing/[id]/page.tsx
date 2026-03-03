@@ -166,7 +166,7 @@ export default function ProcessingPage() {
             ) : (
               <div className="w-5 h-5 border-2 border-slate-300 rounded-full"></div>
             )}
-            <span className="text-sm font-medium">Running AI analysis</span>
+            <span className="text-sm font-medium">Running AI analysis (hallucination, bias, toxicity)</span>
           </div>
 
           <div className={`flex items-center gap-3 ${status === 'completed' ? 'text-green-600' : 'text-slate-500'}`}>
