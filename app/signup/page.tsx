@@ -56,42 +56,42 @@ export default function SignupPage() {
       setError('Account created but sign-in failed. Please log in.')
       router.push('/login')
     } else {
-      router.push('/upload')
+      router.push('/')
       router.refresh()
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h1>
-          <p className="text-gray-600">Start analysing your AI conversations</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">Create an account</h1>
+          <p className="text-slate-600">Start analyzing your AI conversations</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-md p-8 border border-slate-200 shadow-sm space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-md px-4 py-3 text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Name <span className="text-gray-400">(optional)</span>
+            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Name <span className="text-slate-400">(optional)</span>
             </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-white border border-slate-300 rounded-md px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               placeholder="Your name"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
               Email
             </label>
             <input
@@ -100,13 +100,13 @@ export default function SignupPage() {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-white border border-slate-300 rounded-md px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
               Password
             </label>
             <input
@@ -115,13 +115,13 @@ export default function SignupPage() {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-white border border-slate-300 rounded-md px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               placeholder="Min. 8 characters"
             />
           </div>
 
           <div>
-            <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="confirm" className="block text-sm font-medium text-slate-700 mb-1.5">
               Confirm password
             </label>
             <input
@@ -130,7 +130,7 @@ export default function SignupPage() {
               required
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-white border border-slate-300 rounded-md px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
@@ -138,14 +138,14 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors"
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-2 rounded-md transition-colors"
           >
             {loading ? 'Creating account…' : 'Create account'}
           </button>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-slate-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+            <Link href="/login" className="text-slate-900 font-medium underline underline-offset-2 hover:text-slate-700">
               Sign in
             </Link>
           </p>

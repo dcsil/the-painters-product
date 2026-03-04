@@ -1,11 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 import type { ConversationMessage, AnalysisCategory, AnalysisResult } from './analysis-types'
 import { getPromptBuilder, buildCrossCheckPrompt } from './analysis-prompt'
 
-// Re-export types for backward compatibility
-export type { ConversationMessage, FlaggedTurn, HallucinationAnalysisResult } from './analysis-types'
-
-const MODEL_NAME = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash'
+const MODEL_NAME = process.env.GROQ_MODEL ?? 'llama-3.1-8b-instant'
 
 const DEFAULTS: Record<AnalysisCategory, Record<string, unknown>> = {
   hallucination: {
@@ -28,19 +25,18 @@ const DEFAULTS: Record<AnalysisCategory, Record<string, unknown>> = {
   },
 }
 
-export async function analyzeWithGemini(
+export async function analyzeWithGroq(
   conversation: ConversationMessage[],
   category: AnalysisCategory = 'hallucination',
   groundTruth?: string | null,
   previousAnalysis?: AnalysisResult | null
 ): Promise<AnalysisResult> {
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set in environment variables')
+    throw new Error('GROQ_API_KEY is not set in environment variables')
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: MODEL_NAME })
+  const client = new Groq({ apiKey })
 
   const promptBuilder = getPromptBuilder(category)
   let prompt = promptBuilder(conversation, groundTruth)
@@ -49,15 +45,23 @@ export async function analyzeWithGemini(
     prompt = buildCrossCheckPrompt(prompt, previousAnalysis, category)
   }
 
-  const result = await model.generateContent(prompt)
-  const text = result.response.text().trim()
+  const completion = await client.chat.completions.create({
+    model: MODEL_NAME,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const text = completion.choices[0]?.message?.content?.trim()
+  if (!text) {
+    throw new Error('Groq returned empty response')
+  }
+
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
 
   let parsed: AnalysisResult
   try {
     parsed = JSON.parse(cleaned)
   } catch {
-    throw new Error(`Gemini returned invalid JSON: ${cleaned.substring(0, 300)}`)
+    throw new Error(`Groq returned invalid JSON: ${cleaned.substring(0, 300)}`)
   }
 
   // Apply defaults for the category

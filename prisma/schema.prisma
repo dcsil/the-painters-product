@@ -11,26 +11,58 @@ datasource db {
 
 // User model for managing users who upload data
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String            @id @default(cuid())
+  email        String            @unique
   name         String?
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   uploads      Upload[]
+  preferences  UserPreferences?
+  groundTruths GroundTruth[]
+}
+
+// User preferences for analysis defaults
+model UserPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultAnalysisMode String   @default("gemini") // "gemini" | "groq" | "both"
+  defaultAnalyses     String   @default("hallucination,bias,toxicity")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Ground truth knowledge base for grounding analysis
+model GroundTruth {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  content   String
+  fileType  String   // "txt" | "md" | "json"
+  isBuiltIn Boolean  @default(false)
+  createdAt DateTime @default(now())
+  uploads   Upload[]
+
+  @@index([userId])
 }
 
 // Upload model for tracking conversation data uploads
 model Upload {
-  id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileName    String
-  fileSize    Int        // File size in bytes
-  uploadedAt  DateTime   @default(now())
-  status      String     // "pending", "processing", "completed", "failed"
-  errorMessage String?   // Error message if status is "failed"
-  analyses    Analysis[]
+  id               String       @id @default(cuid())
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName         String
+  fileSize         Int          // File size in bytes
+  uploadedAt       DateTime     @default(now())
+  status           String       // "pending", "processing", "completed", "failed"
+  errorMessage     String?      // Error message if status is "failed"
+  analysisMode     String?      // "gemini" | "groq" | "both"
+  groundTruthId    String?
+  groundTruth      GroundTruth? @relation(fields: [groundTruthId], references: [id], onDelete: SetNull)
+  selectedAnalyses String?      // comma-separated: "hallucination,bias,toxicity"
+  analyses         Analysis[]
 }
 
 // Analysis model for storing analysis results
