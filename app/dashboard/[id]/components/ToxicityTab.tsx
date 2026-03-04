@@ -106,7 +106,7 @@ export default function ToxicityTab({ analyses }: { analyses: Analysis[] }) {
 
   const flaggedCount = result?.flaggedTurns?.length ?? 0
   const ratePct = result ? Math.round(result.toxicityRate * 100) : 0
-  const avgConfPct = result ? Math.round(result.averageConfidence * 100) : 0
+  const avgConfPct = result ? (flaggedCount === 0 ? 100 : Math.round(result.averageConfidence * 100)) : 0
   const breakdown = result?.issueBreakdown ?? { HOSTILE_LANGUAGE: 0, CONDESCENSION: 0, INAPPROPRIATE_CONTENT: 0, PROFANITY: 0 }
   const isClean = flaggedCount === 0
 
@@ -122,7 +122,7 @@ export default function ToxicityTab({ analyses }: { analyses: Analysis[] }) {
         </div>
         <div className="bg-white/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200/60 p-6">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Avg. Confidence</p>
-          <p className={`text-4xl font-extrabold tracking-tight ${avgConfPct >= 70 ? 'text-red-600' : avgConfPct > 0 ? 'text-amber-500' : 'text-emerald-600'}`}>{avgConfPct}%</p>
+          <p className={`text-4xl font-extrabold tracking-tight ${isClean ? 'text-emerald-600' : avgConfPct >= 70 ? 'text-red-600' : 'text-amber-500'}`}>{avgConfPct}%</p>
           <p className="text-sm text-slate-500 mt-2 font-medium">across flagged turns</p>
         </div>
         <div className="bg-white/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200/60 p-6">

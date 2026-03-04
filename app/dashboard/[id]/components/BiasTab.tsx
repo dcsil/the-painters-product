@@ -100,7 +100,7 @@ export default function BiasTab({ analyses }: { analyses: Analysis[] }) {
 
   const flaggedCount = result?.flaggedTurns?.length ?? 0
   const ratePct = result ? Math.round(result.biasRate * 100) : 0
-  const avgConfPct = result ? Math.round(result.averageConfidence * 100) : 0
+  const avgConfPct = result ? (flaggedCount === 0 ? 100 : Math.round(result.averageConfidence * 100)) : 0
   const breakdown = result?.issueBreakdown ?? { GENDER_BIAS: 0, RACIAL_BIAS: 0, AGE_BIAS: 0, STEREOTYPING: 0 }
   const isClean = flaggedCount === 0
 
@@ -116,7 +116,7 @@ export default function BiasTab({ analyses }: { analyses: Analysis[] }) {
         </div>
         <div className="bg-white/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200/60 p-6">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Avg. Confidence</p>
-          <p className={`text-4xl font-extrabold tracking-tight ${avgConfPct >= 70 ? 'text-red-600' : avgConfPct > 0 ? 'text-amber-500' : 'text-emerald-600'}`}>{avgConfPct}%</p>
+          <p className={`text-4xl font-extrabold tracking-tight ${isClean ? 'text-emerald-600' : avgConfPct >= 70 ? 'text-red-600' : 'text-amber-500'}`}>{avgConfPct}%</p>
           <p className="text-sm text-slate-500 mt-2 font-medium">across flagged turns</p>
         </div>
         <div className="bg-white/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200/60 p-6">

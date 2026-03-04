@@ -11,6 +11,18 @@ interface GroundTruthItem {
   createdAt: string
 }
 
+interface ViewingItem {
+  name: string
+  content: string
+  fileType: string
+}
+
+const MIME_TYPES: Record<string, string> = {
+  txt: 'text/plain',
+  md: 'text/markdown',
+  json: 'application/json',
+}
+
 export default function GroundTruthPage() {
   const [items, setItems] = useState<GroundTruthItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,6 +30,8 @@ export default function GroundTruthPage() {
   const [name, setName] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [viewingItem, setViewingItem] = useState<ViewingItem | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
 
   const fetchItems = async () => {
     const res = await fetch('/api/ground-truth')
@@ -65,6 +79,30 @@ export default function GroundTruthPage() {
     if (res.ok) {
       setItems(prev => prev.filter(item => item.id !== id))
     }
+  }
+
+  const handleView = async (id: string) => {
+    setViewLoading(true)
+    try {
+      const res = await fetch(`/api/ground-truth/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setViewingItem({ name: data.name, content: data.content, fileType: data.fileType })
+      }
+    } finally {
+      setViewLoading(false)
+    }
+  }
+
+  const handleDownload = (item: ViewingItem) => {
+    const mime = MIME_TYPES[item.fileType] ?? 'text/plain'
+    const blob = new Blob([item.content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${item.name}.${item.fileType}`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   if (loading) {
@@ -170,23 +208,90 @@ export default function GroundTruthPage() {
                       </span>
                     </div>
                   </div>
-                  {!item.isBuiltIn && (
+
+                  <div className="flex items-center gap-2">
+                    {/* View button */}
                     <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-slate-400 hover:text-red-600 transition-colors"
-                      title="Delete"
+                      onClick={() => handleView(item.id)}
+                      disabled={viewLoading}
+                      className="text-slate-400 hover:text-slate-700 transition-colors"
+                      title="View"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
-                  )}
+
+                    {/* Delete button — user-owned only */}
+                    {!item.isBuiltIn && (
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-slate-400 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </div>
+
+      {/* View Modal */}
+      {viewingItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setViewingItem(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[80vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-slate-900 text-lg">{viewingItem.name}</span>
+                <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                  .{viewingItem.fileType}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownload(viewingItem)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </button>
+                <button
+                  onClick={() => setViewingItem(null)}
+                  className="text-slate-400 hover:text-slate-700 transition-colors p-1"
+                  title="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              <pre className="text-sm text-slate-700 font-mono whitespace-pre-wrap break-words leading-relaxed">
+                {viewingItem.content}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
