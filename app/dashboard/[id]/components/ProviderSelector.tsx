@@ -26,9 +26,18 @@ export default function ProviderSelector({
 }) {
   if (analyses.length <= 1) return null
 
+  const SUFFIX_ORDER = ['gemini', 'groq', 'both']
+  const sorted = [...analyses].sort((a, b) => {
+    const sa = a.analysisType.split('-').slice(1).join('-')
+    const sb = b.analysisType.split('-').slice(1).join('-')
+    const ia = SUFFIX_ORDER.indexOf(sa)
+    const ib = SUFFIX_ORDER.indexOf(sb)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
+
   return (
     <div className="flex gap-2 mt-4">
-      {analyses.map(a => (
+      {sorted.map(a => (
         <button
           key={a.analysisType}
           onClick={() => onSelect(a.analysisType)}

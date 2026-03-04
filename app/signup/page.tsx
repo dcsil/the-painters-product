@@ -56,7 +56,7 @@ export default function SignupPage() {
       setError('Account created but sign-in failed. Please log in.')
       router.push('/login')
     } else {
-      router.push('/upload')
+      router.push('/')
       router.refresh()
     }
   }
