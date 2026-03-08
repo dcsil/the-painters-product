@@ -29,6 +29,7 @@ model UserPreferences {
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   defaultAnalysisMode String   @default("gemini") // "gemini" | "groq" | "both"
   defaultAnalyses     String   @default("hallucination,bias,toxicity")
+  alertEmail          String?  // email to notify when a chat analysis completes
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -51,8 +52,8 @@ model GroundTruth {
 // Upload model for tracking conversation data uploads
 model Upload {
   id               String       @id @default(cuid())
-  userId           String
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String?      // Null for chat-originated uploads (no logged-in customer)
+  user             User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   fileName         String
   fileSize         Int          // File size in bytes
   uploadedAt       DateTime     @default(now())
@@ -62,7 +63,32 @@ model Upload {
   groundTruthId    String?
   groundTruth      GroundTruth? @relation(fields: [groundTruthId], references: [id], onDelete: SetNull)
   selectedAnalyses String?      // comma-separated: "hallucination,bias,toxicity"
+  source           String       @default("upload") // "upload" | "chat"
   analyses         Analysis[]
+  chatSession      ChatSession?
+}
+
+// Chat session model for customer chatbot interactions
+model ChatSession {
+  id             String        @id @default(cuid())
+  createdAt      DateTime      @default(now())
+  lastActivityAt DateTime      @default(now())
+  endedAt        DateTime?
+  uploadId       String?       @unique
+  upload         Upload?       @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  messages       ChatMessage[]
+}
+
+// Individual messages within a chat session
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String      // "user" | "assistant"
+  content   String
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
 }
 
 // Analysis model for storing analysis results

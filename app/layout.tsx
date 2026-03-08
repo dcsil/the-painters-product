@@ -36,6 +36,9 @@ export default async function RootLayout({
           <header className="bg-white border-b border-slate-200">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
               <nav className="flex items-center gap-6">
+                <Link href="/chat" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+                  Chatbot
+                </Link>
                 <Link href="/upload" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
                   Upload
                 </Link>

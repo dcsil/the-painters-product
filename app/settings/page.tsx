@@ -18,6 +18,7 @@ const ANALYSIS_TYPES = [
 export default function SettingsPage() {
   const [mode, setMode] = useState('gemini')
   const [analyses, setAnalyses] = useState<string[]>(['hallucination', 'bias', 'toxicity'])
+  const [alertEmail, setAlertEmail] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -29,6 +30,7 @@ export default function SettingsPage() {
       .then(data => {
         setMode(data.defaultAnalysisMode)
         setAnalyses(data.defaultAnalyses.split(','))
+        setAlertEmail(data.alertEmail ?? '')
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -51,6 +53,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           defaultAnalysisMode: mode,
           defaultAnalyses: analyses.join(','),
+          alertEmail,
         }),
       })
 
@@ -153,6 +156,21 @@ export default function SettingsPage() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Alert Email */}
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Chat Analysis Alert Email</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              When a customer chat session is analyzed, an email notification will be sent to this address. Leave blank to disable.
+            </p>
+            <input
+              type="email"
+              value={alertEmail}
+              onChange={e => setAlertEmail(e.target.value)}
+              placeholder="e.g. analyst@company.com"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+            />
           </div>
 
           {error && (

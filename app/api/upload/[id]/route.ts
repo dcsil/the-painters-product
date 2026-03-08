@@ -25,7 +25,8 @@ export async function GET(
       return NextResponse.json({ error: 'Upload not found' }, { status: 404 })
     }
 
-    if (upload.userId !== session.user.id) {
+    // Chat-originated uploads (no userId) are accessible to any authenticated analyst
+    if (upload.userId && upload.userId !== session.user.id) {
       return NextResponse.json({ error: 'Upload not found' }, { status: 404 })
     }
 

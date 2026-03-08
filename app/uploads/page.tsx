@@ -9,7 +9,9 @@ interface Upload {
   fileSize: number
   uploadedAt: string
   status: string
+  source?: string
   analyses: any[]
+  chatSession?: { id: string; createdAt: string; endedAt: string | null } | null
 }
 
 export default function UploadsPage() {
@@ -151,10 +153,17 @@ export default function UploadsPage() {
               >
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-slate-900">
-                        {upload.fileName}
+                        {upload.source === 'chat'
+                          ? `Chat session · ${new Date(upload.chatSession?.createdAt ?? upload.uploadedAt).toLocaleDateString()}`
+                          : upload.fileName}
                       </h3>
+                      {upload.source === 'chat' && (
+                        <span className="px-2.5 py-0.5 rounded-sm text-xs font-semibold tracking-wide uppercase bg-blue-100 text-blue-800">
+                          Chatbot
+                        </span>
+                      )}
                       <span className={`px-2.5 py-0.5 rounded-sm text-xs font-semibold tracking-wide uppercase ${getStatusColor(upload.status)}`}>
                         {upload.status}
                       </span>
