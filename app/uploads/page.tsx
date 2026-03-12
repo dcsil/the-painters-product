@@ -9,7 +9,9 @@ interface Upload {
   fileSize: number
   uploadedAt: string
   status: string
+  source?: string
   analyses: any[]
+  chatSession?: { id: string; createdAt: string; endedAt: string | null } | null
 }
 
 export default function UploadsPage() {
@@ -72,18 +74,9 @@ export default function UploadsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4">
-      <div className="max-w-5xl mx-auto py-8">
+      <div className="max-w-3xl mx-auto py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link 
-            href="/"
-            className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-4 font-medium transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </Link>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
@@ -151,10 +144,17 @@ export default function UploadsPage() {
               >
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-slate-900">
-                        {upload.fileName}
+                        {upload.source === 'chat'
+                          ? `Chat session · ${new Date(upload.chatSession?.createdAt ?? upload.uploadedAt).toLocaleDateString()}`
+                          : upload.fileName}
                       </h3>
+                      {upload.source === 'chat' && (
+                        <span className="px-2.5 py-0.5 rounded-sm text-xs font-semibold tracking-wide uppercase bg-blue-100 text-blue-800">
+                          Chatbot
+                        </span>
+                      )}
                       <span className={`px-2.5 py-0.5 rounded-sm text-xs font-semibold tracking-wide uppercase ${getStatusColor(upload.status)}`}>
                         {upload.status}
                       </span>

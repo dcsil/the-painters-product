@@ -1,54 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
-import { analyzeWithGemini } from '@/lib/gemini'
-import { analyzeWithGroq } from '@/lib/groq'
 import { auth } from '@/lib/auth'
-import type { ConversationMessage, AnalysisCategory, AnalysisResult } from '@/lib/analysis-types'
+import { runAnalysisPipeline } from '@/lib/run-analysis'
+import type { ConversationMessage, AnalysisCategory } from '@/lib/analysis-types'
 
 // Allow up to 120s for multi-analysis on Vercel
 export const maxDuration = 120
-
-async function runAnalysisPipeline(
-  category: AnalysisCategory,
-  mode: string,
-  conversation: ConversationMessage[],
-  groundTruth: string | null,
-  uploadId: string
-) {
-  if (mode === 'gemini') {
-    const result = await analyzeWithGemini(conversation, category, groundTruth)
-    await storeAnalysis(uploadId, `${category}-gemini`, result)
-  } else if (mode === 'groq') {
-    const result = await analyzeWithGroq(conversation, category, groundTruth)
-    await storeAnalysis(uploadId, `${category}-groq`, result)
-  } else if (mode === 'both') {
-    // Step 1: Gemini first pass
-    const geminiResult = await analyzeWithGemini(conversation, category, groundTruth)
-    await storeAnalysis(uploadId, `${category}-gemini`, geminiResult)
-
-    // Step 2: Groq cross-check with Gemini's output
-    const crossCheckResult = await analyzeWithGroq(conversation, category, groundTruth, geminiResult)
-    await storeAnalysis(uploadId, `${category}-both`, crossCheckResult)
-  }
-}
-
-async function storeAnalysis(uploadId: string, analysisType: string, result: AnalysisResult) {
-  const flaggedCount = result.flaggedTurns?.length ?? 0
-  const confidence = result.averageConfidence ?? 0
-
-  await prisma.analysis.create({
-    data: {
-      uploadId,
-      analysisType,
-      result: JSON.stringify(result),
-      confidence,
-      detectedIssues: flaggedCount,
-    },
-  })
-
-  console.log(`[upload] ${analysisType} complete — ${flaggedCount} flagged turns`)
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -138,6 +96,7 @@ export async function POST(request: NextRequest) {
         analysisMode: mode,
         groundTruthId: groundTruthId ?? undefined,
         selectedAnalyses: analysesStr,
+        source: 'upload',
       }
     })
 

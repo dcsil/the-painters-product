@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
@@ -13,6 +13,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["300"],
 });
 
 export const metadata: Metadata = {
@@ -30,12 +36,25 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}
       >
         {session?.user && (
           <header className="bg-white border-b border-slate-200">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
               <nav className="flex items-center gap-6">
+                <Link
+                  href="/"
+                  className="text-slate-900 text-[15px] tracking-[0.18em] hover:text-slate-500 transition-colors mr-2"
+                  style={{ fontFamily: "var(--font-space-grotesk)", fontWeight: 300 }}
+                >
+                  oversight
+                </Link>
+                <Link href="/chat" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+                  Chatbot
+                </Link>
+                <Link href="/monitor" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+                  Monitor
+                </Link>
                 <Link href="/upload" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
                   Upload
                 </Link>
