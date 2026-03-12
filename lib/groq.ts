@@ -2,7 +2,7 @@ import Groq from 'groq-sdk'
 import type { ConversationMessage, AnalysisCategory, AnalysisResult } from './analysis-types'
 import { getPromptBuilder, buildCrossCheckPrompt } from './analysis-prompt'
 
-const MODEL_NAME = process.env.GROQ_MODEL ?? 'meta-llama/llama-4-maverick-17b-128e-instruct'
+const MODEL_NAME = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b'
 
 const DEFAULTS: Record<AnalysisCategory, Record<string, unknown>> = {
   hallucination: {

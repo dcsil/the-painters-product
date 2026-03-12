@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateChatReply } from '@/lib/chat-reply'
+import { monitorLatestMessage } from '@/lib/live-monitor'
 import type { ChatMessage } from '@/lib/chat-reply'
+import type { ConversationMessage } from '@/lib/analysis-types'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +21,11 @@ export async function POST(request: NextRequest) {
 
     if (!session) {
       session = await prisma.chatSession.create({ data: {} })
+    }
+
+    // Reject messages for already-ended sessions
+    if (session.endedAt) {
+      return NextResponse.json({ error: 'This session has already ended' }, { status: 400 })
     }
 
     // Persist the user message
@@ -44,8 +51,8 @@ export async function POST(request: NextRequest) {
     // Generate bot reply
     const replyText = await generateChatReply(history)
 
-    // Persist the assistant reply
-    await prisma.chatMessage.create({
+    // Persist the assistant reply (capture ID for monitoring update)
+    const assistantMsg = await prisma.chatMessage.create({
       data: {
         sessionId: session.id,
         role: 'assistant',
@@ -59,7 +66,31 @@ export async function POST(request: NextRequest) {
       data: { lastActivityAt: new Date() },
     })
 
-    // Return the full updated message list
+    // --- Live monitoring: run hallucination + bias checks ---
+    const messagesForMonitor = await prisma.chatMessage.findMany({
+      where: { sessionId: session.id },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    const conversationForMonitor: ConversationMessage[] = messagesForMonitor.map(m => ({
+      id: m.role as 'user' | 'assistant',
+      content: m.content,
+    }))
+
+    let monitoringResult = null
+    try {
+      monitoringResult = await monitorLatestMessage(conversationForMonitor)
+      // Persist monitoring result on the assistant message
+      await prisma.chatMessage.update({
+        where: { id: assistantMsg.id },
+        data: { monitoringData: JSON.stringify(monitoringResult) },
+      })
+    } catch (err) {
+      // Monitoring failure is non-fatal — chat continues, panel shows error state
+      console.error('[chat] Live monitoring error:', err)
+    }
+
+    // Fetch the full updated message list (after monitoring is persisted)
     const updatedMessages = await prisma.chatMessage.findMany({
       where: { sessionId: session.id },
       orderBy: { createdAt: 'asc' },
@@ -68,6 +99,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       sessionId: session.id,
       messages: updatedMessages,
+      monitoringResult,
     })
   } catch (error) {
     console.error('[chat] Error:', error)

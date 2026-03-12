@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [mode, setMode] = useState('gemini')
   const [analyses, setAnalyses] = useState<string[]>(['hallucination', 'bias', 'toxicity'])
   const [alertEmail, setAlertEmail] = useState('')
+  const [biasThreshold, setBiasThreshold] = useState(70)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -31,6 +32,7 @@ export default function SettingsPage() {
         setMode(data.defaultAnalysisMode)
         setAnalyses(data.defaultAnalyses.split(','))
         setAlertEmail(data.alertEmail ?? '')
+        if (typeof data.biasThreshold === 'number') setBiasThreshold(data.biasThreshold)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -39,6 +41,12 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (analyses.length === 0) {
       setError('Select at least one analysis type')
+      return
+    }
+
+    const threshold = Number(biasThreshold)
+    if (!Number.isInteger(threshold) || threshold < 0 || threshold > 100) {
+      setError('Bias threshold must be a whole number between 0 and 100')
       return
     }
 
@@ -54,6 +62,7 @@ export default function SettingsPage() {
           defaultAnalysisMode: mode,
           defaultAnalyses: analyses.join(','),
           alertEmail,
+          biasThreshold: threshold,
         }),
       })
 
@@ -87,15 +96,6 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-slate-50 p-4">
       <div className="max-w-3xl mx-auto py-12">
         <div className="mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-4 font-medium transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">Settings</h1>
           <p className="text-slate-600">Configure your default analysis preferences. These can be overridden per upload.</p>
         </div>
@@ -171,6 +171,46 @@ export default function SettingsPage() {
               placeholder="e.g. analyst@company.com"
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Live Monitoring */}
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Live Monitoring</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Configure thresholds for the real-time chat monitoring panel. If a live bias score meets or exceeds the threshold, the chat is stopped and a live agent is connected.
+            </p>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Bias Alert Threshold (%)
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={biasThreshold}
+                onChange={e => setBiasThreshold(Number(e.target.value))}
+                className="flex-1 accent-slate-900"
+              />
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={biasThreshold}
+                  onChange={e => {
+                    const v = Math.min(100, Math.max(0, Number(e.target.value)))
+                    setBiasThreshold(isNaN(v) ? 0 : v)
+                  }}
+                  className="w-16 px-2 py-1.5 border border-slate-300 rounded-md text-sm text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                />
+                <span className="text-sm text-slate-500">%</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              Default is 70%. Lower values are more sensitive; higher values are more permissive.
+            </p>
           </div>
 
           {error && (

@@ -18,6 +18,7 @@ export async function GET() {
     defaultAnalysisMode: preferences.defaultAnalysisMode,
     defaultAnalyses: preferences.defaultAnalyses,
     alertEmail: preferences.alertEmail ?? '',
+    biasThreshold: preferences.biasThreshold,
   })
 }
 
@@ -28,7 +29,7 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json()
-  const { defaultAnalysisMode, defaultAnalyses, alertEmail } = body
+  const { defaultAnalysisMode, defaultAnalyses, alertEmail, biasThreshold } = body
 
   const validModes = ['gemini', 'groq', 'both']
   if (defaultAnalysisMode && !validModes.includes(defaultAnalysisMode)) {
@@ -50,18 +51,27 @@ export async function PUT(request: Request) {
     }
   }
 
+  if (biasThreshold !== undefined) {
+    const threshold = Number(biasThreshold)
+    if (!Number.isInteger(threshold) || threshold < 0 || threshold > 100) {
+      return NextResponse.json({ error: 'Bias threshold must be an integer between 0 and 100' }, { status: 400 })
+    }
+  }
+
   const preferences = await prisma.userPreferences.upsert({
     where: { userId: session.user.id },
     update: {
       ...(defaultAnalysisMode && { defaultAnalysisMode }),
       ...(defaultAnalyses && { defaultAnalyses }),
       ...(alertEmail !== undefined && { alertEmail: alertEmail || null }),
+      ...(biasThreshold !== undefined && { biasThreshold: Number(biasThreshold) }),
     },
     create: {
       userId: session.user.id,
       ...(defaultAnalysisMode && { defaultAnalysisMode }),
       ...(defaultAnalyses && { defaultAnalyses }),
       ...(alertEmail !== undefined && { alertEmail: alertEmail || null }),
+      ...(biasThreshold !== undefined && { biasThreshold: Number(biasThreshold) }),
     },
   })
 
@@ -69,5 +79,6 @@ export async function PUT(request: Request) {
     defaultAnalysisMode: preferences.defaultAnalysisMode,
     defaultAnalyses: preferences.defaultAnalyses,
     alertEmail: preferences.alertEmail ?? '',
+    biasThreshold: preferences.biasThreshold,
   })
 }

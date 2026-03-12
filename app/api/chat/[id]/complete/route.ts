@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { runConversationAnalysis } from '@/lib/run-analysis'
 import { sendChatAnalysisAlert } from '@/lib/send-alert-email'
 import type { ConversationMessage, AnalysisCategory } from '@/lib/analysis-types'
+import type { ViolationDetails } from '@/lib/send-alert-email'
 
 export const maxDuration = 120
 
@@ -17,6 +18,7 @@ export async function POST(
     const analysisMode = (body.analysisMode as string) ?? 'groq'
     const selectedAnalysesRaw = (body.selectedAnalyses as string) ?? 'hallucination,bias,toxicity'
     const selectedAnalyses = selectedAnalysesRaw.split(',') as AnalysisCategory[]
+    const violationDetails = (body.violationDetails as ViolationDetails | undefined) ?? undefined
 
     const session = await prisma.chatSession.findUnique({
       where: { id: sessionId },
@@ -37,12 +39,13 @@ export async function POST(
     }
 
     // Mark session as ended
+    const endedReason = violationDetails ? 'violation' : 'user'
     await prisma.chatSession.update({
       where: { id: sessionId },
-      data: { endedAt: new Date() },
+      data: { endedAt: new Date(), endedReason },
     })
 
-    // Convert messages to analysis format
+    // Convert messages to analysis format (snapshot before adding "live agent" message)
     const conversation: ConversationMessage[] = session.messages.map(m => ({
       id: m.role as 'user' | 'assistant',
       content: m.content,
@@ -60,6 +63,15 @@ export async function POST(
       return NextResponse.json({ error: 'Groq API key not configured' }, { status: 400 })
     }
 
+    // If a live-monitor violation was detected, prime the batch analysis with the finding
+    const liveMonitorHint = violationDetails
+      ? {
+          category: violationDetails.type as AnalysisCategory,
+          reason: violationDetails.reason ?? '',
+          biasScore: violationDetails.biasScore,
+        }
+      : undefined
+
     const { uploadId, success, error } = await runConversationAnalysis(conversation, {
       mode: analysisMode,
       selectedAnalyses,
@@ -67,6 +79,7 @@ export async function POST(
       fileName,
       fileSize,
       source: 'chat',
+      liveMonitorHint,
     })
 
     // Link the upload back to this chat session
@@ -75,11 +88,23 @@ export async function POST(
       data: { uploadId },
     })
 
+    // If this was a violation-triggered stop, append the "live agent" system message
+    // Inserted AFTER analysis runs so the system message doesn't skew results
+    if (violationDetails) {
+      await prisma.chatMessage.create({
+        data: {
+          sessionId,
+          role: 'assistant',
+          content: 'A live agent is being connected. Please hold on.',
+        },
+      })
+    }
+
     if (!success) {
       return NextResponse.json({ uploadId, error }, { status: 500 })
     }
 
-    // Send alert email if any analyst has one configured
+    // Send alert email to all analysts with a configured alertEmail
     const allPrefs = await prisma.userPreferences.findMany({
       where: { alertEmail: { not: null } },
       select: { alertEmail: true },
@@ -100,6 +125,7 @@ export async function POST(
             uploadId,
             messageCount: session.messages.length,
             dashboardUrl,
+            violationDetails,
           })
         )
     )

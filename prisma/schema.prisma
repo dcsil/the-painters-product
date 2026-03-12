@@ -30,6 +30,7 @@ model UserPreferences {
   defaultAnalysisMode String   @default("gemini") // "gemini" | "groq" | "both"
   defaultAnalyses     String   @default("hallucination,bias,toxicity")
   alertEmail          String?  // email to notify when a chat analysis completes
+  biasThreshold       Int      @default(70) // live monitoring bias alert threshold (0–100)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -74,6 +75,7 @@ model ChatSession {
   createdAt      DateTime      @default(now())
   lastActivityAt DateTime      @default(now())
   endedAt        DateTime?
+  endedReason    String?       // "user" | "violation"
   uploadId       String?       @unique
   upload         Upload?       @relation(fields: [uploadId], references: [id], onDelete: SetNull)
   messages       ChatMessage[]
@@ -81,12 +83,13 @@ model ChatSession {
 
 // Individual messages within a chat session
 model ChatMessage {
-  id        String      @id @default(cuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role      String      // "user" | "assistant"
-  content   String
-  createdAt DateTime    @default(now())
+  id             String      @id @default(cuid())
+  sessionId      String
+  session        ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role           String      // "user" | "assistant"
+  content        String
+  monitoringData String?     // JSON of LiveMonitorResult, only set on role="assistant" messages
+  createdAt      DateTime    @default(now())
 
   @@index([sessionId])
 }
