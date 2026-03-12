@@ -64,7 +64,7 @@ export default function SessionSidebar({ selectedId, onSelect }: Props) {
     // "Load more" fetches with no time boundary (all history); initial/refresh uses 30-min anchor
     const params = new URLSearchParams({ limit: '20' })
     if (!append) params.set('since', sinceRef.current)
-    const activeCursor = cursorOverride ?? (append ? cursor : null)
+    const activeCursor = cursorOverride ?? null
     if (activeCursor) params.set('cursor', activeCursor)
 
     const res = await fetch(`/api/monitor/sessions?${params}`)
