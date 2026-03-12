@@ -17,13 +17,11 @@ export async function GET(request: NextRequest) {
 
   const limit = Math.min(100, Math.max(1, parseInt(limitParam ?? '20', 10)))
 
-  const cursorClause = cursor ? { cursor: { id: cursor }, skip: 1 } : {}
-
   const sessions = await prisma.chatSession.findMany({
     where: since ? { createdAt: { gte: since } } : {},
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
-    ...cursorClause,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : undefined),
     include: {
       _count: { select: { messages: true } },
       messages: {
