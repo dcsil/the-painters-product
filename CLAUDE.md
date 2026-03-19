@@ -106,11 +106,12 @@ app/
   monitor/components/
     SessionSidebar.tsx        # Session list with 30-second polling, status badges, cursor pagination
     SessionDetailPanel.tsx    # Full session view with 5-second polling for active sessions
-  upload/page.tsx             # File upload with analysis mode, type checkboxes, ground truth selector
-  processing/[id]/page.tsx    # Polling status page (see Known Issues)
+  upload/page.tsx             # File upload — single or multi-file (up to 10) with inline per-file progress
+  processing/[id]/page.tsx    # Polling status page for single-file uploads (see Known Issues)
+  batch/[batchId]/page.tsx    # Batch summary page — aggregate KPIs, per-file table, subtype breakdown
   dashboard/[id]/page.tsx     # Tabbed analysis dashboard (Overview, Hallucination, Bias, Toxicity)
   dashboard/[id]/components/  # Dashboard tab components (OverviewTab, HallucinationTab, BiasTab, ToxicityTab, etc.)
-  uploads/page.tsx            # List all past uploads for the current user
+  uploads/page.tsx            # List all past uploads — single files as cards, batch groups as collapsible batch cards
   settings/page.tsx           # User preferences (default analysis mode, default analysis types, alert email, bias threshold)
   ground-truth/page.tsx       # Ground truth management (upload, list, delete)
   api/
@@ -125,6 +126,7 @@ app/
     chat/[id]/complete/route.ts # POST: end session (user or violation), run analysis, send alert emails (maxDuration=120)
     monitor/sessions/route.ts # GET: list recent chat sessions for live monitoring dashboard (cursor pagination, auth required)
     trends/route.ts           # GET: aggregate analysis data for trends page (query: days=30)
+    batch/[batchId]/route.ts  # GET: all uploads in a batch owned by the current user
     auth/[...nextauth]/       # NextAuth.js route handler (GET + POST)
     auth/register/            # POST: create new account
 lib/
@@ -216,9 +218,10 @@ sample-telus-many-hallucinations.json  # Test: multiple hallucination types
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/upload` | Required | Upload file + run analysis (FormData: file, fileName, fileSize, analysisMode?, selectedAnalyses?, groundTruthId?) |
+| `POST` | `/api/upload` | Required | Upload file + run analysis (FormData: file, fileName, fileSize, analysisMode?, selectedAnalyses?, groundTruthId?, batchId?) |
 | `GET`  | `/api/upload/[id]` | Required | Get upload status + analyses (own uploads only) |
-| `GET`  | `/api/uploads` | Required | List all uploads for the logged-in user |
+| `GET`  | `/api/uploads` | Required | List all uploads for the logged-in user (includes batchId for grouping) |
+| `GET`  | `/api/batch/[batchId]` | Required | Get all uploads in a batch owned by the current user |
 | `GET`  | `/api/settings` | Required | Get user preferences (incl. biasThreshold) |
 | `PUT`  | `/api/settings` | Required | Update user preferences `{ defaultAnalysisMode, defaultAnalyses, alertEmail?, biasThreshold? }` |
 | `GET`  | `/api/ground-truth` | Required | List user's ground truths + built-in ones |
@@ -237,7 +240,7 @@ sample-telus-many-hallucinations.json  # Test: multiple hallucination types
 - `User` — id, email, name?, passwordHash, createdAt, updatedAt
 - `UserPreferences` — id, userId (unique), defaultAnalysisMode, defaultAnalyses, alertEmail?, biasThreshold (int, default 70), createdAt, updatedAt
 - `GroundTruth` — id, userId?, name, content, fileType, isBuiltIn, createdAt
-- `Upload` — id, userId, fileName, fileSize, uploadedAt, status, errorMessage?, analysisMode?, groundTruthId?, selectedAnalyses?, source ("upload"|"chat")
+- `Upload` — id, userId, fileName, fileSize, uploadedAt, status, errorMessage?, analysisMode?, groundTruthId?, selectedAnalyses?, source ("upload"|"chat"), batchId? (groups multi-file uploads)
 - `Analysis` — id, uploadId, analysisType, result (JSON string), confidence (0–1), detectedIssues (int), createdAt
 - `ChatSession` — id, createdAt, lastActivityAt, endedAt?, endedReason? ("user"|"violation"), uploadId? (set after analysis)
 - `ChatMessage` — id, sessionId, role ("user"|"assistant"), content, monitoringData? (JSON string, assistant messages only), createdAt
@@ -253,7 +256,7 @@ Relations: User →(1:1) UserPreferences, User →(1:many) Upload →(1:many) An
 - **Conversation trends over time** — `/trends` page showing issue counts, detection rates per category, and issue subtype breakdowns charted over time using Recharts
 - **Analyst annotations and feedback loop** — let analysts mark flagged issues as false positives, confirm true positives, or add notes; enables accuracy measurement and threshold tuning
 - **Customizable chatbot persona/knowledge base** — configurable system prompt and domain context for the chatbot so it simulates a real customer service scenario relevant to the analyst's domain
-- **Multi-file / bulk upload support** — upload dozens of conversations at once and get aggregate results (total issue counts, worst-offending conversations, category breakdowns)
+- ~~**Multi-file / bulk upload support**~~ — ✅ Implemented: upload up to 10 files per batch with shared settings, inline per-file progress, batch summary page (`/batch/[batchId]`), and grouped history view
 - **Configurable alert thresholds and routing** — per-category severity thresholds, mute rules for low-severity issues, and per-analyst alert routing (not everyone gets every alert)
 - **Real processing progress** — replace the simulated progress bar with actual streaming or async job status (see Known Issues above)
 
