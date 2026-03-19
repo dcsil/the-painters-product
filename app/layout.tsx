@@ -55,6 +55,9 @@ export default async function RootLayout({
                 <Link href="/monitor" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
                   Monitor
                 </Link>
+                <Link href="/trends" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+                  Trends
+                </Link>
                 <Link href="/upload" className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
                   Upload
                 </Link>

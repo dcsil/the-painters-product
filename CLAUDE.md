@@ -91,7 +91,7 @@ DATABASE_URL=your_neon_url npx prisma migrate deploy
 
 ```
 app/
-  layout.tsx                  # Root layout — auth header, nav (Chatbot, Monitor, Upload, History, Ground Truth, Settings), sign-out
+  layout.tsx                  # Root layout — auth header, nav (Chatbot, Monitor, Trends, Upload, History, Ground Truth, Settings), sign-out
   page.tsx                    # Home page with features overview
   globals.css                 # Tailwind CSS 4 theme + dark mode
   login/page.tsx              # Login form (email + password)
@@ -102,6 +102,7 @@ app/
     ChatInterface.tsx         # Full chatbot UI with live monitoring state management
     MonitoringPanel.tsx       # Shared live monitoring visualization (bias bar, violation banner, per-message results)
   monitor/page.tsx            # Analyst live monitoring dashboard (session list + detail panel)
+  trends/page.tsx             # Trends analytics page — issue counts over time + subtype breakdown charts (Recharts)
   monitor/components/
     SessionSidebar.tsx        # Session list with 30-second polling, status badges, cursor pagination
     SessionDetailPanel.tsx    # Full session view with 5-second polling for active sessions
@@ -123,6 +124,7 @@ app/
     chat/[id]/route.ts        # GET: retrieve chat session + full message history (incl. monitoringData)
     chat/[id]/complete/route.ts # POST: end session (user or violation), run analysis, send alert emails (maxDuration=120)
     monitor/sessions/route.ts # GET: list recent chat sessions for live monitoring dashboard (cursor pagination, auth required)
+    trends/route.ts           # GET: aggregate analysis data for trends page (query: days=30)
     auth/[...nextauth]/       # NextAuth.js route handler (GET + POST)
     auth/register/            # POST: create new account
 lib/
@@ -223,6 +225,7 @@ sample-telus-many-hallucinations.json  # Test: multiple hallucination types
 | `POST` | `/api/ground-truth` | Required | Upload new ground truth (FormData: file, name) |
 | `DELETE` | `/api/ground-truth/[id]` | Required | Delete a user-owned ground truth |
 | `GET`  | `/api/monitor/sessions` | Required | List recent chat sessions for monitoring (query: since?, cursor?) |
+| `GET`  | `/api/trends` | Required | Aggregated issue counts, detection rates, subtype breakdown (query: days=30) |
 | `POST` | `/api/chat` | Public | Send a user message + get bot reply + live monitoring result `{ sessionId?, message }` |
 | `GET`  | `/api/chat/[id]` | Public | Retrieve chat session metadata + full message history (incl. monitoringData per message) |
 | `POST` | `/api/chat/[id]/complete` | Public | End session, run analysis, send alert emails `{ violationDetails? }` |
@@ -247,6 +250,11 @@ Relations: User →(1:1) UserPreferences, User →(1:many) Upload →(1:many) An
 
 ## Future Extensions
 
+- **Conversation trends over time** — `/trends` page showing issue counts, detection rates per category, and issue subtype breakdowns charted over time using Recharts
+- **Analyst annotations and feedback loop** — let analysts mark flagged issues as false positives, confirm true positives, or add notes; enables accuracy measurement and threshold tuning
+- **Customizable chatbot persona/knowledge base** — configurable system prompt and domain context for the chatbot so it simulates a real customer service scenario relevant to the analyst's domain
+- **Multi-file / bulk upload support** — upload dozens of conversations at once and get aggregate results (total issue counts, worst-offending conversations, category breakdowns)
+- **Configurable alert thresholds and routing** — per-category severity thresholds, mute rules for low-severity issues, and per-analyst alert routing (not everyone gets every alert)
 - **Real processing progress** — replace the simulated progress bar with actual streaming or async job status (see Known Issues above)
 
 ## No Test Framework
