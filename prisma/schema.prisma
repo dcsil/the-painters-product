@@ -65,8 +65,11 @@ model Upload {
   groundTruth      GroundTruth? @relation(fields: [groundTruthId], references: [id], onDelete: SetNull)
   selectedAnalyses String?      // comma-separated: "hallucination,bias,toxicity"
   source           String       @default("upload") // "upload" | "chat"
+  batchId          String?      // Optional: groups multiple files uploaded together
   analyses         Analysis[]
   chatSession      ChatSession?
+
+  @@index([batchId])
 }
 
 // Chat session model for customer chatbot interactions

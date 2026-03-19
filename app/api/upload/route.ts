@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     const analysisMode = formData.get('analysisMode') as string | null
     const selectedAnalysesStr = formData.get('selectedAnalyses') as string | null
     const groundTruthId = formData.get('groundTruthId') as string | null
+    const batchId = formData.get('batchId') as string | null
 
     console.log('File info:', { fileName, fileSize, fileType: file?.type })
 
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
         groundTruthId: groundTruthId ?? undefined,
         selectedAnalyses: analysesStr,
         source: 'upload',
+        batchId: batchId ?? null,
       }
     })
 
