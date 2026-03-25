@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
 import { auth } from '@/lib/auth'
 import { runAnalysisPipeline } from '@/lib/run-analysis'
+import { checkRateLimit, incrementRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import type { ConversationMessage, AnalysisCategory } from '@/lib/analysis-types'
 
 // Allow up to 120s for multi-analysis on Vercel
@@ -14,6 +15,25 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Rate limiting
+    const identifier = `user:${session.user.id}`
+    const limitCheck = await checkRateLimit(identifier, 'upload')
+    if (!limitCheck.allowed) {
+      const retryAfter = Math.ceil(
+        (limitCheck.minuteResetAt.getTime() - Date.now()) / 1000
+      )
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          retryAfter,
+          remaining: { minute: 0, day: limitCheck.remainingDay },
+          limits: RATE_LIMITS.upload,
+        },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+    await incrementRateLimit(identifier, 'upload')
 
     console.log('Upload request received')
 

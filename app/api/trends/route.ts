@@ -66,7 +66,13 @@ export async function GET(request: Request) {
 
   const dailyData = Object.entries(buckets)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, v]) => ({ date, ...v }))
+    .map(([date, v]) => ({
+      date,
+      ...v,
+      hallucinationRate: v.uploadCount > 0 ? Math.round((v.hallucinationIssues / v.uploadCount) * 100) : 0,
+      biasRate: v.uploadCount > 0 ? Math.round((v.biasIssues / v.uploadCount) * 100) : 0,
+      toxicityRate: v.uploadCount > 0 ? Math.round((v.toxicityIssues / v.uploadCount) * 100) : 0,
+    }))
 
   // --- Subtype breakdown across all current uploads ---
   const subtypeBreakdown = {

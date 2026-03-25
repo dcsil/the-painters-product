@@ -213,6 +213,29 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          {/* Usage Limits */}
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Usage Limits (Alpha)</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              These rate limits are in place during the alpha period to ensure fair access and system stability.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-4 rounded-md border border-slate-200 bg-slate-50">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">File Uploads</p>
+                <p className="text-sm text-slate-900 font-semibold">2 per minute</p>
+                <p className="text-sm text-slate-900 font-semibold">20 per day</p>
+              </div>
+              <div className="p-4 rounded-md border border-slate-200 bg-slate-50">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Live Chat Sessions</p>
+                <p className="text-sm text-slate-900 font-semibold">2 per minute</p>
+                <p className="text-sm text-slate-900 font-semibold">20 per day</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              Limits reset on a rolling window. Contact the team if you need higher limits for a specific testing scenario.
+            </p>
+          </div>
+
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-700 font-medium text-sm">{error}</p>

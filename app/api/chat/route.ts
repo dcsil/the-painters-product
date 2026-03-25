@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateChatReply } from '@/lib/chat-reply'
 import { monitorLatestMessage } from '@/lib/live-monitor'
+import { checkRateLimit, incrementRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import type { ChatMessage } from '@/lib/chat-reply'
 import type { ConversationMessage } from '@/lib/analysis-types'
 
@@ -13,6 +14,27 @@ export async function POST(request: NextRequest) {
     if (!message || typeof message !== 'string' || message.trim() === '') {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
+
+    // IP-based rate limiting for the public chat endpoint
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1'
+    const identifier = `ip:${ip}`
+    const limitCheck = await checkRateLimit(identifier, 'chat')
+    if (!limitCheck.allowed) {
+      const retryAfter = Math.ceil(
+        (limitCheck.minuteResetAt.getTime() - Date.now()) / 1000
+      )
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          retryAfter,
+          remaining: { minute: 0, day: limitCheck.remainingDay },
+          limits: RATE_LIMITS.chat,
+        },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+    await incrementRateLimit(identifier, 'chat')
 
     // Create a new session if none provided
     let session = sessionId

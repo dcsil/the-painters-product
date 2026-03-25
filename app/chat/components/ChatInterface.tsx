@@ -117,6 +117,12 @@ export default function ChatInterface({
 
       if (!res.ok) {
         const data = await res.json()
+        if (res.status === 429) {
+          const seconds = data.retryAfter ?? 60
+          throw new Error(
+            `Rate limit reached — try again in ${seconds} second${seconds !== 1 ? 's' : ''}.`
+          )
+        }
         throw new Error(data.error ?? 'Failed to send message')
       }
 

@@ -4,6 +4,7 @@ import "./globals.css";
 import { auth } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
 import Link from "next/link";
+import ClientShell from "@/app/components/ClientShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -90,7 +91,9 @@ export default async function RootLayout({
             </div>
           </header>
         )}
-        {children}
+        <ClientShell isLoggedIn={!!session?.user}>
+          {children}
+        </ClientShell>
       </body>
     </html>
   );

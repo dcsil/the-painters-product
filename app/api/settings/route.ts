@@ -19,6 +19,8 @@ export async function GET() {
     defaultAnalyses: preferences.defaultAnalyses,
     alertEmail: preferences.alertEmail ?? '',
     biasThreshold: preferences.biasThreshold,
+    termsAcceptedAt: preferences.termsAcceptedAt ?? null,
+    termsVersion: preferences.termsVersion ?? null,
   })
 }
 
@@ -29,7 +31,7 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json()
-  const { defaultAnalysisMode, defaultAnalyses, alertEmail, biasThreshold } = body
+  const { defaultAnalysisMode, defaultAnalyses, alertEmail, biasThreshold, termsAccepted } = body
 
   const validModes = ['gemini', 'groq', 'both']
   if (defaultAnalysisMode && !validModes.includes(defaultAnalysisMode)) {
@@ -58,6 +60,10 @@ export async function PUT(request: Request) {
     }
   }
 
+  const termsUpdate = termsAccepted === true
+    ? { termsAcceptedAt: new Date(), termsVersion: 'alpha-1' }
+    : {}
+
   const preferences = await prisma.userPreferences.upsert({
     where: { userId: session.user.id },
     update: {
@@ -65,6 +71,7 @@ export async function PUT(request: Request) {
       ...(defaultAnalyses && { defaultAnalyses }),
       ...(alertEmail !== undefined && { alertEmail: alertEmail || null }),
       ...(biasThreshold !== undefined && { biasThreshold: Number(biasThreshold) }),
+      ...termsUpdate,
     },
     create: {
       userId: session.user.id,
@@ -72,6 +79,7 @@ export async function PUT(request: Request) {
       ...(defaultAnalyses && { defaultAnalyses }),
       ...(alertEmail !== undefined && { alertEmail: alertEmail || null }),
       ...(biasThreshold !== undefined && { biasThreshold: Number(biasThreshold) }),
+      ...termsUpdate,
     },
   })
 
@@ -80,5 +88,7 @@ export async function PUT(request: Request) {
     defaultAnalyses: preferences.defaultAnalyses,
     alertEmail: preferences.alertEmail ?? '',
     biasThreshold: preferences.biasThreshold,
+    termsAcceptedAt: preferences.termsAcceptedAt ?? null,
+    termsVersion: preferences.termsVersion ?? null,
   })
 }
