@@ -20,6 +20,7 @@ model User {
   uploads      Upload[]
   preferences  UserPreferences?
   groundTruths GroundTruth[]
+  feedbacks    Feedback[]
 }
 
 // User preferences for analysis defaults
@@ -31,6 +32,8 @@ model UserPreferences {
   defaultAnalyses     String   @default("hallucination,bias,toxicity")
   alertEmail          String?  // email to notify when a chat analysis completes
   biasThreshold       Int      @default(70) // live monitoring bias alert threshold (0–100)
+  termsAcceptedAt     DateTime? // when the user accepted the alpha T&C
+  termsVersion        String?  @default("alpha-1") // which version was accepted
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -95,6 +98,33 @@ model ChatMessage {
   createdAt      DateTime    @default(now())
 
   @@index([sessionId])
+}
+
+// Feedback submitted by alpha testers
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String   // "bug" | "feature" | "general"
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Rate limiting tracking per user or IP
+model RateLimit {
+  id            String   @id @default(cuid())
+  identifier    String   // prefixed: "user:<id>" or "ip:<addr>"
+  type          String   // "upload" | "chat"
+  minuteCount   Int      @default(0)
+  minuteResetAt DateTime
+  dayCount      Int      @default(0)
+  dayResetAt    DateTime
+  updatedAt     DateTime @updatedAt
+
+  @@unique([identifier, type])
+  @@index([identifier, type])
 }
 
 // Analysis model for storing analysis results

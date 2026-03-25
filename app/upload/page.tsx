@@ -187,6 +187,12 @@ export default function UploadPage() {
     const response = await fetch('/api/upload', { method: 'POST', body: formData })
     if (!response.ok) {
       const errData = await response.json()
+      if (response.status === 429) {
+        const seconds = errData.retryAfter ?? 60
+        throw new Error(
+          `Rate limit reached — you can upload again in ${seconds} second${seconds !== 1 ? 's' : ''}.`
+        )
+      }
       throw new Error(errData.error || 'Upload failed')
     }
     const data = await response.json()

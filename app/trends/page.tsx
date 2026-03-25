@@ -13,7 +13,12 @@ interface DailyDataPoint {
   hallucinationIssues: number
   biasIssues: number
   toxicityIssues: number
+  hallucinationRate: number
+  biasRate: number
+  toxicityRate: number
 }
+
+type ChartMode = 'absolute' | 'rate'
 
 interface TrendsData {
   dailyData: DailyDataPoint[]
@@ -64,6 +69,7 @@ export default function TrendsPage() {
   const [days, setDays] = useState(30)
   const [data, setData] = useState<TrendsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [chartMode, setChartMode] = useState<ChartMode>('absolute')
 
   useEffect(() => {
     setLoading(true)
@@ -85,25 +91,44 @@ export default function TrendsPage() {
       <div className="max-w-6xl mx-auto px-4 py-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Trends</h1>
             <p className="text-slate-500 text-sm mt-1">Issue patterns across all analyzed conversations</p>
           </div>
-          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1">
-            {DAY_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setDays(opt.value)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  days === opt.value
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Chart mode toggle */}
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1">
+              {(['absolute', 'rate'] as ChartMode[]).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setChartMode(mode)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    chartMode === mode
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {mode === 'absolute' ? 'Count' : 'Rate %'}
+                </button>
+              ))}
+            </div>
+            {/* Day range selector */}
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1">
+              {DAY_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDays(opt.value)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    days === opt.value
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -197,20 +222,35 @@ export default function TrendsPage() {
 
             {/* Issues over time line chart */}
             <div className="bg-white border border-slate-200 rounded-xl p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Issues Over Time</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-slate-700">
+                  {chartMode === 'absolute' ? 'Issues Over Time' : 'Detection Rate Over Time'}
+                </h2>
+                {chartMode === 'rate' && (
+                  <span className="text-xs text-slate-400">% of conversations flagged per day</span>
+                )}
+              </div>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                    domain={chartMode === 'rate' ? [0, 100] : undefined}
+                    tickFormatter={chartMode === 'rate' ? (v) => `${v}%` : undefined}
+                  />
                   <Tooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
                     labelStyle={{ fontWeight: 600 }}
+                    formatter={chartMode === 'rate' ? (v) => [`${v}%`] : undefined}
                   />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="hallucinationIssues" name="Hallucination" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="biasIssues" name="Bias" stroke="#f59e0b" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="toxicityIssues" name="Toxicity" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey={chartMode === 'absolute' ? 'hallucinationIssues' : 'hallucinationRate'} name="Hallucination" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey={chartMode === 'absolute' ? 'biasIssues' : 'biasRate'} name="Bias" stroke="#f59e0b" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey={chartMode === 'absolute' ? 'toxicityIssues' : 'toxicityRate'} name="Toxicity" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

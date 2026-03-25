@@ -1,6 +1,7 @@
 import Groq from 'groq-sdk'
 import type { ConversationMessage } from './analysis-types'
 import { buildLiveHallucinationPrompt, buildLiveBiasPrompt } from './live-monitoring-prompt'
+import { GROQ_MODEL_CHAIN, isGroqRateLimitError } from './groq'
 
 export interface LiveMonitorResult {
   hallucination: boolean
@@ -10,21 +11,37 @@ export interface LiveMonitorResult {
   error?: string
 }
 
-const MODEL_NAME = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b'
-
+// Calls Groq with automatic model fallback on rate limit errors.
+// Tries each model in GROQ_MODEL_CHAIN in order; propagates immediately on
+// non-rate-limit errors.
 async function callGroq(prompt: string): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error('GROQ_API_KEY is not set')
 
   const client = new Groq({ apiKey })
-  const completion = await client.chat.completions.create({
-    model: MODEL_NAME,
-    messages: [{ role: 'user', content: prompt }],
-  })
+  let lastError: unknown
 
-  const text = completion.choices[0]?.message?.content?.trim() ?? ''
-  // Strip any accidental markdown code fences
-  return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+  for (const modelName of GROQ_MODEL_CHAIN) {
+    try {
+      const completion = await client.chat.completions.create({
+        model: modelName,
+        messages: [{ role: 'user', content: prompt }],
+      })
+
+      const text = completion.choices[0]?.message?.content?.trim() ?? ''
+      // Strip any accidental markdown code fences
+      return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    } catch (err) {
+      if (isGroqRateLimitError(err)) {
+        console.warn(`[live-monitor] Rate limit hit on ${modelName}, trying next fallback...`)
+        lastError = err
+        continue
+      }
+      throw err
+    }
+  }
+
+  throw lastError ?? new Error('All Groq models exhausted due to rate limits')
 }
 
 /**
@@ -47,7 +64,7 @@ export async function monitorLatestMessage(
   let hallucinationReason = ''
   let biasScore = 0
   let biasReason = ''
-  let errors: string[] = []
+  const errors: string[] = []
 
   // --- Parse hallucination result ---
   if (hallucinationSettled.status === 'fulfilled') {
