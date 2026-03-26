@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { RATE_LIMITS } from '@/lib/rate-limit-config'
 
 const ANALYSIS_MODES = [
   { value: 'gemini', label: 'Gemini (Balanced)', description: 'Uses Google Gemini for reliable, balanced analysis' },
@@ -222,13 +223,13 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-4 rounded-md border border-slate-200 bg-slate-50">
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">File Uploads</p>
-                <p className="text-sm text-slate-900 font-semibold">2 per minute</p>
-                <p className="text-sm text-slate-900 font-semibold">20 per day</p>
+                <p className="text-sm text-slate-900 font-semibold">{RATE_LIMITS.upload.perMinute} per minute</p>
+                <p className="text-sm text-slate-900 font-semibold">{RATE_LIMITS.upload.perDay} per day</p>
               </div>
               <div className="p-4 rounded-md border border-slate-200 bg-slate-50">
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Live Chat Sessions</p>
-                <p className="text-sm text-slate-900 font-semibold">2 per minute</p>
-                <p className="text-sm text-slate-900 font-semibold">20 per day</p>
+                <p className="text-sm text-slate-900 font-semibold">{RATE_LIMITS.chat.perMinute} per minute</p>
+                <p className="text-sm text-slate-900 font-semibold">{RATE_LIMITS.chat.perDay} per day</p>
               </div>
             </div>
             <p className="text-xs text-slate-400 mt-2">

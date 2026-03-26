@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { RATE_LIMITS } from '@/lib/rate-limit-config'
 
 const CURRENT_TERMS_VERSION = 'alpha-1'
 
@@ -93,8 +94,8 @@ export default function TermsModal({ onAccepted }: Props) {
               To ensure fair access and system stability during alpha, the following usage limits apply per account:
             </p>
             <ul className="list-disc list-inside mt-2 space-y-1">
-              <li><strong>File uploads:</strong> 2 per minute, 20 per day</li>
-              <li><strong>Live chat sessions:</strong> 2 per minute, 20 per day</li>
+              <li><strong>File uploads:</strong> {RATE_LIMITS.upload.perMinute} per minute, {RATE_LIMITS.upload.perDay} per day</li>
+              <li><strong>Live chat sessions:</strong> {RATE_LIMITS.chat.perMinute} per minute, {RATE_LIMITS.chat.perDay} per day</li>
             </ul>
             <p className="mt-2">
               These limits may be adjusted as the alpha progresses. You can view your current limits at any time in the Settings page.
