@@ -39,6 +39,9 @@ export async function GET(request: Request) {
     hallucinationIssues: number
     biasIssues: number
     toxicityIssues: number
+    hallucinationFlaggedUploads: number
+    biasFlaggedUploads: number
+    toxicityFlaggedUploads: number
   }> = {}
 
   // Pre-fill every day in range with zeros
@@ -48,6 +51,7 @@ export async function GET(request: Request) {
     buckets[d.toISOString().slice(0, 10)] = {
       uploadCount: 0, totalIssues: 0,
       hallucinationIssues: 0, biasIssues: 0, toxicityIssues: 0,
+      hallucinationFlaggedUploads: 0, biasFlaggedUploads: 0, toxicityFlaggedUploads: 0,
     }
   }
 
@@ -55,23 +59,41 @@ export async function GET(request: Request) {
     const date = upload.uploadedAt.toISOString().slice(0, 10)
     if (!buckets[date]) continue
     buckets[date].uploadCount++
+    
+    let hasHallucination = false
+    let hasBias = false
+    let hasToxicity = false
+
     for (const analysis of upload.analyses) {
       const issues = analysis.detectedIssues ?? 0
       buckets[date].totalIssues += issues
-      if (analysis.analysisType.startsWith('hallucination')) buckets[date].hallucinationIssues += issues
-      else if (analysis.analysisType.startsWith('bias')) buckets[date].biasIssues += issues
-      else if (analysis.analysisType.startsWith('toxicity')) buckets[date].toxicityIssues += issues
+      if (analysis.analysisType.startsWith('hallucination')) {
+        buckets[date].hallucinationIssues += issues
+        if (issues > 0) hasHallucination = true
+      }
+      else if (analysis.analysisType.startsWith('bias')) {
+        buckets[date].biasIssues += issues
+        if (issues > 0) hasBias = true
+      }
+      else if (analysis.analysisType.startsWith('toxicity')) {
+        buckets[date].toxicityIssues += issues
+        if (issues > 0) hasToxicity = true
+      }
     }
+
+    if (hasHallucination) buckets[date].hallucinationFlaggedUploads++
+    if (hasBias) buckets[date].biasFlaggedUploads++
+    if (hasToxicity) buckets[date].toxicityFlaggedUploads++
   }
 
   const dailyData = Object.entries(buckets)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, v]) => ({
+    .map(([date, { hallucinationFlaggedUploads, biasFlaggedUploads, toxicityFlaggedUploads, ...rest }]) => ({
       date,
-      ...v,
-      hallucinationRate: v.uploadCount > 0 ? Math.round((v.hallucinationIssues / v.uploadCount) * 100) : 0,
-      biasRate: v.uploadCount > 0 ? Math.round((v.biasIssues / v.uploadCount) * 100) : 0,
-      toxicityRate: v.uploadCount > 0 ? Math.round((v.toxicityIssues / v.uploadCount) * 100) : 0,
+      ...rest,
+      hallucinationRate: rest.uploadCount > 0 ? Math.round((hallucinationFlaggedUploads / rest.uploadCount) * 100) : 0,
+      biasRate: rest.uploadCount > 0 ? Math.round((biasFlaggedUploads / rest.uploadCount) * 100) : 0,
+      toxicityRate: rest.uploadCount > 0 ? Math.round((toxicityFlaggedUploads / rest.uploadCount) * 100) : 0,
     }))
 
   // --- Subtype breakdown across all current uploads ---
