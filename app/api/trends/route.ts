@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const days = Math.min(Math.max(parseInt(searchParams.get('days') ?? '30', 10), 1), 365)
 
   const since = new Date()
-  since.setDate(since.getDate() - days)
+  since.setDate(since.getDate() - (days - 1))
 
   // Also fetch the prior period for trend comparison
   const priorSince = new Date(since)
