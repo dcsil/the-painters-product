@@ -21,7 +21,10 @@ export async function GET(request: Request) {
 
   const uploads = await prisma.upload.findMany({
     where: {
-      userId: session.user.id,
+      OR: [
+        { userId: session.user.id },
+        { source: 'chat' }
+      ],
       status: 'completed',
       uploadedAt: { gte: priorSince },
     },
