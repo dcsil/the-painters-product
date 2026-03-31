@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import MonitoringPanel from '@/app/chat/components/MonitoringPanel'
 import type { LiveMonitorResult } from '@/lib/live-monitor'
 
@@ -53,6 +54,7 @@ export default function SessionDetailPanel({ sessionId, biasThreshold }: Props) 
   const [isEnded, setIsEnded] = useState(false)
   const [endedReason, setEndedReason] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [uploadId, setUploadId] = useState<string | null>(null)
 
   // Effect 1: Load session on mount / sessionId change
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function SessionDetailPanel({ sessionId, biasThreshold }: Props) 
     setMessages([])
     setIsEnded(false)
     setEndedReason(null)
+    setUploadId(null)
 
     fetch(`/api/chat/${sessionId}`)
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -67,6 +70,7 @@ export default function SessionDetailPanel({ sessionId, biasThreshold }: Props) 
         setMessages(data.messages ?? [])
         setIsEnded(!!data.endedAt)
         setEndedReason(data.endedReason ?? null)
+        setUploadId(data.uploadId ?? null)
       })
       .catch(() => { /* session not found or error */ })
       .finally(() => setLoading(false))
@@ -84,6 +88,7 @@ export default function SessionDetailPanel({ sessionId, biasThreshold }: Props) 
       if (data.endedAt) {
         setIsEnded(true)
         setEndedReason(data.endedReason ?? null)
+        setUploadId(data.uploadId ?? null)
       }
     }, 5_000)
 
@@ -154,12 +159,26 @@ export default function SessionDetailPanel({ sessionId, biasThreshold }: Props) 
             </div>
             <p className="text-xs text-slate-400 mt-0.5">{messages.length} messages</p>
           </div>
-          {!isEnded && (
-            <span className="flex items-center gap-1.5 text-xs text-blue-600">
-              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse inline-block" />
-              Live — refreshes every 5s
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {uploadId && (
+              <Link
+                href={`/dashboard/${uploadId}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-md shadow-sm transition-colors"
+                target="_blank"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                View Dashboard
+              </Link>
+            )}
+            {!isEnded && (
+              <span className="flex items-center gap-1.5 text-xs text-blue-600">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse inline-block" />
+                Live — refreshes every 5s
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Messages */}
