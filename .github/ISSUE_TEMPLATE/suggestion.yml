@@ -1,0 +1,57 @@
+name: Feature Suggestion
+description: Suggest an improvement or new capability for the application
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the problem you're trying to solve — not just the solution — so the team can evaluate the best approach.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user need or pain point does this address? What are you currently unable to do?
+      placeholder: e.g. "As an analyst, I can't tell which flagged issues I've already reviewed, so I lose track of my progress across large batch uploads."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe your suggested approach
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Did you consider other approaches? Why did you prefer your proposed solution?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: roadmap_alignment
+    attributes:
+      label: Related to a known planned feature?
+      description: Check any existing roadmap items this suggestion relates to
+      options:
+        - label: Analyst annotations and feedback loop
+        - label: Customizable chatbot persona / knowledge base
+        - label: Configurable alert thresholds and routing
+        - label: Real processing progress (replace simulated progress bar)
+        - label: Not related to any planned feature
+
+  - type: dropdown
+    id: priority_view
+    attributes:
+      label: How important is this to your workflow?
+      options:
+        - Critical — blocking my use of the product
+        - High — significantly impacts my workflow
+        - Medium — would be a meaningful improvement
+        - Low — nice to have
+    validations:
+      required: true

@@ -1,0 +1,97 @@
+name: Bug Report
+description: Report a reproducible defect in the application
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out all required fields so the team can triage efficiently.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the bug
+      placeholder: e.g. "Upload fails silently when file exceeds 10MB"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: |
+        How severe is this bug?
+        - **Critical** — Data loss, auth bypass, security vulnerability, or complete feature unavailability
+        - **High** — Core workflow blocked or incorrect results shown; no workaround
+        - **Medium** — Degraded experience but flow completes; workaround exists
+        - **Low** — Minor UI or non-blocking inconvenience
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the exact steps needed to reproduce the issue
+      placeholder: |
+        1. Go to /upload
+        2. Select a JSON file larger than 10MB
+        3. Click Upload
+        4. Observe that no error message appears
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected vs actual behavior
+      description: What did you expect to happen, and what actually happened?
+      placeholder: |
+        Expected: A validation error message is shown indicating the file is too large.
+        Actual: The upload button becomes unresponsive with no feedback.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Production (Vercel)
+        - Vercel Preview
+        - Local development
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: analysis_mode
+    attributes:
+      label: Analysis mode affected
+      description: Which analysis mode(s) were you using when the bug occurred?
+      options:
+        - label: Gemini (balanced)
+        - label: Groq / Llama (faster)
+        - label: Both (deeper analysis)
+        - label: Not applicable
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or logs
+      description: Paste any relevant console errors, network responses, or attach screenshots
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Is there a workaround that allows you to continue? If so, describe it.
+    validations:
+      required: false
